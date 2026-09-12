@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#050505"
+  >
+
+  <meta
+    name="description"
+    content="NICEGOLD Premium VPS Control Panel"
+  >
+
+  <title>NICEGOLD | VPS Control Panel</title>
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  >
+
+</head>
+
+<body>
+
+<div class="wallpaper"></div>
+<div class="wallpaper-overlay"></div>
+
+<!-- =====================================================
+     MOBILE OVERLAY
+===================================================== -->
+
+<div
+  id="mobileOverlay"
+  class="mobile-overlay"
+></div>
+
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside
+  id="sidebar"
+  class="sidebar"
+>
+
+  <div class="sidebar-brand">
+
+    <div class="crown">
+      ♛
+    </div>
+
+    <div>
+      <strong>NICEGOLD</strong>
+      <small>VPS CONTROL</small>
+    </div>
+
+  </div>
+
+
+  <div class="server-mini">
+
+    <div class="server-mini-icon">
+      N
+    </div>
+
+    <div class="server-mini-info">
+
+      <strong>NICEGOLD VPS</strong>
+
+      <span>
+        <i></i>
+        Online
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <div class="nav-label">
+    WORKSPACE
+  </div>
+
+
+  <nav class="sidebar-nav">
+
+    <button
+      class="nav-item active"
+      data-section="dashboard"
+    >
+      <span class="nav-icon">▦</span>
+      <span>
+        <b>Dashboard</b>
+        <small>Overview & stats</small>
+      </span>
+    </button>
+
+
+    <button
+      class="nav-item"
+      data-section="servers"
+    >
+      <span class="nav-icon">▣</span>
+      <span>
+        <b>Servers</b>
+        <small>VPS instances</small>
+      </span>
+    </button>
+
+
+    <button
+      class="nav-item"
+      data-section="monitoring"
+    >
+      <span class="nav-icon">◌</span>
+      <span>
+        <b>Monitoring</b>
+        <small>Live performance</small>
+      </span>
+    </button>
+
+
+    <button
+      class="nav-item"
+      data-section="network"
+    >
+      <span class="nav-icon">⌁</span>
+      <span>
+        <b>Network</b>
+        <small>Interfaces & traffic</small>
+      </span>
+    </button>
+
+
+    <button
+      class="nav-item"
+      data-section="services"
+    >
+      <span class="nav-icon">⚙</span>
+      <span>
+        <b>Services</b>
+        <small>Service health</small>
+      </span>
+    </button>
+
+
+    <button
+      class="nav-item"
+      data-section="console"
+    >
+      <span class="nav-icon">&gt;_</span>
+      <span>
+        <b>Console</b>
+        <small>Diagnostics</small>
+      </span>
+    </button>
+
+
+    <div class="nav-label">
+      MANAGEMENT
+    </div>
+
+
+    <button
+      class="nav-item"
+      data-section="logs"
+    >
+      <span class="nav-icon">▤</span>
+      <span>
+        <b>Activity</b>
+        <small>System events</small>
+      </span>
+    </button>
+
+
+    <button
+      class="nav-item"
+      data-section="security"
+    >
+      <span class="nav-icon">◇</span>
+      <span>
+        <b>Security</b>
+        <small>Protection status</small>
+      </span>
+    </button>
+
+
+    <button
+      class="nav-item"
+      data-section="backups"
+    >
+      <span class="nav-icon">◫</span>
+      <span>
+        <b>Backups</b>
+        <small>Data protection</small>
+      </span>
+    </button>
+
+
+    <button
+      class="nav-item"
+      data-section="settings"
+    >
+      <span class="nav-icon">⚙</span>
+      <span>
+        <b>Settings</b>
+        <small>Panel preferences</small>
+      </span>
+    </button>
+
+  </nav>
+
+
+  <div class="sidebar-footer">
+
+    <div class="footer-brand">
+      ♛ NICEGOLD
+    </div>
+
+    <small>
+      Premium VPS Solutions
+    </small>
+
+    <p>
+      More power.<br>
+      More control.<br>
+      More freedom.
+    </p>
+
+    <div class="version">
+      PANEL V3.0
+    </div>
+
+  </div>
+
+</aside>
+
+
+<!-- =====================================================
+     MAIN APPLICATION
+===================================================== -->
+
+<div class="app-shell">
+
+
+  <!-- TOPBAR -->
+
+  <header class="topbar">
+
+    <div class="topbar-left">
+
+      <button
+        id="menuButton"
+        class="icon-button menu-button"
+        aria-label="Open menu"
+      >
+        ☰
+      </button>
+
+
+      <div class="breadcrumb">
+
+        <span>
+          NICEGOLD
+        </span>
+
+        <b>/</b>
+
+        <strong id="pageTitle">
+          Dashboard
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <div class="topbar-center">
+
+      <div class="search-box">
+
+        <span>⌕</span>
+
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search server, command, or section..."
+        >
+
+        <kbd>CTRL K</kbd>
+
+      </div>
+
+    </div>
+
+
+    <div class="topbar-right">
+
+      <div class="global-status">
+
+        <span class="status-light"></span>
+
+        <span>
+          ONLINE
+        </span>
+
+      </div>
+
+
+      <button
+        class="icon-button"
+        id="notificationButton"
+      >
+        ♧
+        <em>3</em>
+      </button>
+
+
+      <div class="top-clock">
+
+        <strong id="topClock">
+          --:--:--
+        </strong>
+
+        <small id="topDate">
+          --
+        </small>
+
+      </div>
+
+
+      <div class="profile">
+
+        <div class="profile-avatar">
+          N
+        </div>
+
+        <div>
+
+          <strong>
+            NICEGOLD
+          </strong>
+
+          <small>
+            Administrator
+          </small>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- CONTENT -->
+
+  <main class="content">
+
+
+    <!-- =================================================
+         DASHBOARD
+    ================================================== -->
+
+    <section
+      id="dashboard"
+      class="page-section active"
+    >
+
+      <div class="hero-panel">
+
+        <div class="hero-content">
+
+          <div class="hero-label">
+            <span class="pulse"></span>
+            SERVER OPERATIONAL
+          </div>
+
+          <h1>
+            NICEGOLD
+          </h1>
+
+          <div class="hero-subtitle">
+            VPS CONTROL PANEL
+          </div>
+
+          <p>
+            Premium server management,
+            monitoring and infrastructure
+            visibility from one command center.
+          </p>
+
+          <div class="hero-actions">
+
+            <button
+              class="button primary"
+              data-section="monitoring"
+            >
+              View Performance
+              <span>↗</span>
+            </button>
+
+            <button
+              class="button ghost"
+              data-section="console"
+            >
+              Open Console
+              <span>&gt;_</span>
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <div class="hero-quote">
+
+          <span>“</span>
+
+          <p>
+            More power.<br>
+            More control.
+          </p>
+
+          <small>
+            NICEGOLD
+          </small>
+
+        </div>
+
+
+        <div class="hero-server-strip">
+
+          <div>
+            <span>SERVER</span>
+            <strong id="heroHostname">
+              Loading...
+            </strong>
+          </div>
+
+          <div>
+            <span>UPTIME</span>
+            <strong id="heroUptime">
+              Loading...
+            </strong>
+          </div>
+
+          <div>
+            <span>NODE.JS</span>
+            <strong id="heroNode">
+              Loading...
+            </strong>
+          </div>
+
+          <div>
+            <span>ARCH</span>
+            <strong id="heroArch">
+              Loading...
+            </strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- METRICS -->
+
+      <div class="metric-grid">
+
+
+        <article class="metric-card">
+
+          <div class="metric-head">
+
+            <div class="metric-icon">
+              CPU
+            </div>
+
+            <span>
+              PROCESSOR
+            </span>
+
+          </div>
+
+          <div class="metric-number">
+            <strong id="cpuValue">
+              0
+            </strong>
+            <small>%</small>
+          </div>
+
+          <div class="metric-meta">
+            <span id="cpuCores">
+              0 cores
+            </span>
+
+            <span>
+              LOAD
+            </span>
+          </div>
+
+          <div class="metric-bar">
+            <i id="cpuBar"></i>
+          </div>
+
+          <div class="mini-chart">
+            <canvas id="cpuChart"></canvas>
+          </div>
+
+        </article>
+
+
+        <article class="metric-card">
+
+          <div class="metric-head">
+
+            <div class="metric-icon">
+              RAM
+            </div>
+
+            <span>
+              MEMORY
+            </span>
+
+          </div>
+
+          <div class="metric-number">
+            <strong id="ramValue">
+              0
+            </strong>
+            <small>%</small>
+          </div>
+
+          <div class="metric-meta">
+            <span id="ramUsed">
+              0 GB
+            </span>
+
+            <span id="ramTotal">
+              0 GB
+            </span>
+          </div>
+
+          <div class="metric-bar">
+            <i id="ramBar"></i>
+          </div>
+
+          <div class="mini-chart">
+            <canvas id="ramChart"></canvas>
+          </div>
+
+        </article>
+
+
+        <article class="metric-card">
+
+          <div class="metric-head">
+
+            <div class="metric-icon">
+              SSD
+            </div>
+
+            <span>
+              STORAGE
+            </span>
+
+          </div>
+
+          <div class="metric-number">
+            <strong id="diskValue">
+              0
+            </strong>
+            <small>%</small>
+          </div>
+
+          <div class="metric-meta">
+            <span id="diskUsed">
+              0 GB
+            </span>
+
+            <span id="diskTotal">
+              0 GB
+            </span>
+          </div>
+
+          <div class="metric-bar">
+            <i id="diskBar"></i>
+          </div>
+
+          <div class="mini-chart">
+            <canvas id="diskChart"></canvas>
+          </div>
+
+        </article>
+
+
+        <article class="metric-card">
+
+          <div class="metric-head">
+
+            <div class="metric-icon">
+              NET
+            </div>
+
+            <span>
+              NETWORK
+            </span>
+
+          </div>
+
+          <div class="metric-number">
+            <strong id="networkCount">
+              0
+            </strong>
+            <small>IF</small>
+          </div>
+
+          <div class="metric-meta">
+            <span>
+              INTERFACES
+            </span>
+
+            <span class="live-text">
+              ACTIVE
+            </span>
+          </div>
+
+          <div class="network-signal">
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+
+        </article>
+
+
+        <article class="metric-card">
+
+          <div class="metric-head">
+
+            <div class="metric-icon">
+              UP
+            </div>
+
+            <span>
+              UPTIME
+            </span>
+
+          </div>
+
+          <div
+            id="uptimeValue"
+            class="uptime-number"
+          >
+            0d 0h
+          </div>
+
+          <div class="metric-meta">
+            <span>
+              SYSTEM
+            </span>
+
+            <span class="live-text">
+              ● ONLINE
+            </span>
+          </div>
+
+          <div class="uptime-line">
+            <i></i>
+          </div>
+
+        </article>
+
+      </div>
+
+
+      <!-- LOWER DASHBOARD -->
+
+      <div class="dashboard-grid">
+
+
+        <!-- PERFORMANCE -->
+
+        <div class="panel performance-panel">
+
+          <div class="panel-head">
+
+            <div>
+              <span class="panel-kicker">
+                REAL-TIME
+              </span>
+
+              <h2>
+                System Performance
+              </h2>
+            </div>
+
+            <div class="chart-controls">
+
+              <button class="active">
+                CPU
+              </button>
+
+              <button>
+                RAM
+              </button>
+
+              <button>
+                DISK
+              </button>
+
+              <button>
+                NET
+              </button>
+
+            </div>
+
+          </div>
+
+          <div class="large-chart">
+            <canvas id="mainChart"></canvas>
+          </div>
+
+          <div class="chart-legend">
+
+            <span>
+              <i class="cpu-dot"></i>
+              CPU
+            </span>
+
+            <span>
+              <i class="ram-dot"></i>
+              RAM
+            </span>
+
+            <span>
+              <i class="disk-dot"></i>
+              DISK
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- SERVER INFORMATION -->
+
+        <div class="panel info-panel">
+
+          <div class="panel-head">
+
+            <div>
+              <span class="panel-kicker">
+                SERVER
+              </span>
+
+              <h2>
+                Information
+              </h2>
+            </div>
+
+            <span class="panel-icon">
+              ▣
+            </span>
+
+          </div>
+
+
+          <div class="info-list">
+
+            <div>
+              <span>Hostname</span>
+              <strong id="infoHostname">
+                Loading...
+              </strong>
+            </div>
+
+            <div>
+              <span>Operating System</span>
+              <strong id="infoOS">
+                Loading...
+              </strong>
+            </div>
+
+            <div>
+              <span>Architecture</span>
+              <strong id="infoArch">
+                Loading...
+              </strong>
+            </div>
+
+            <div>
+              <span>Node.js</span>
+              <strong id="infoNode">
+                Loading...
+              </strong>
+            </div>
+
+            <div>
+              <span>Process ID</span>
+              <strong id="infoPid">
+                Loading...
+              </strong>
+            </div>
+
+            <div>
+              <span>CPU Cores</span>
+              <strong id="infoCpu">
+                Loading...
+              </strong>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- QUICK ACTIONS -->
+
+        <div class="panel quick-panel">
+
+          <div class="panel-head">
+
+            <div>
+              <span class="panel-kicker">
+                CONTROL
+              </span>
+
+              <h2>
+                Quick Actions
+              </h2>
+            </div>
+
+          </div>
+
+
+          <div class="quick-actions">
+
+            <button
+              data-section="monitoring"
+            >
+              <span>◌</span>
+              <strong>
+                Monitor
+                <small>Live resources</small>
+              </strong>
+            </button>
+
+            <button
+              data-section="console"
+            >
+              <span>&gt;_</span>
+              <strong>
+                Console
+                <small>Diagnostics</small>
+              </strong>
+            </button>
+
+            <button
+              data-section="network"
+            >
+              <span>⌁</span>
+              <strong>
+                Network
+                <small>Interfaces</small>
+              </strong>
+            </button>
+
+            <button
+              data-section="logs"
+            >
+              <span>▤</span>
+              <strong>
+                Activity
+                <small>System events</small>
+              </strong>
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOTTOM -->
+
+      <div class="bottom-grid">
+
+
+        <div class="panel table-panel">
+
+          <div class="panel-head">
+
+            <div>
+              <span class="panel-kicker">
+                CONNECTIVITY
+              </span>
+
+              <h2>
+                Network Interfaces
+              </h2>
+            </div>
+
+            <button
+              class="small-button"
+              data-section="network"
+            >
+              View All
+            </button>
+
+          </div>
+
+          <div
+            id="dashboardNetwork"
+            class="table"
+          >
+            <div class="table-loading">
+              Loading...
+            </div>
+          </div>
+
+        </div>
+
+
+        <div class="panel table-panel">
+
+          <div class="panel-head">
+
+            <div>
+              <span class="panel-kicker">
+                HEALTH
+              </span>
+
+              <h2>
+                Services
+              </h2>
+            </div>
+
+            <button
+              class="small-button"
+              data-section="services"
+            >
+              Manage
+            </button>
+
+          </div>
+
+          <div
+            id="dashboardServices"
+            class="service-table"
+          >
+            <div class="table-loading">
+              Loading...
+            </div>
+          </div>
+
+        </div>
+
+
+        <div class="panel activity-panel">
+
+          <div class="panel-head">
+
+            <div>
+              <span class="panel-kicker">
+                LIVE FEED
+              </span>
+
+              <h2>
+                Recent Activity
+              </h2>
+            </div>
+
+          </div>
+
+          <div
+            id="activityFeed"
+            class="activity-feed"
+          >
+            Loading...
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         SERVERS
+    ================================================== -->
+
+    <section
+      id="servers"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            INFRASTRUCTURE
+          </span>
+
+          <h1>
+            Servers
+          </h1>
+
+          <p>
+            VPS infrastructure overview.
+          </p>
+        </div>
+
+        <button class="button primary">
+          + Add Server
+        </button>
+
+      </div>
+
+
+      <div class="server-large-card panel">
+
+        <div class="server-large-top">
+
+          <div class="server-large-icon">
+            N
+          </div>
+
+          <div>
+            <span class="live-badge">
+              ● ONLINE
+            </span>
+
+            <h2>
+              NICEGOLD VPS
+            </h2>
+
+            <p id="serverHostnamePage">
+              Loading...
+            </p>
+          </div>
+
+        </div>
+
+
+        <div class="server-details-grid">
+
+          <div>
+            <span>Platform</span>
+            <strong id="serverPlatformPage">
+              Loading...
+            </strong>
+          </div>
+
+          <div>
+            <span>Architecture</span>
+            <strong id="serverArchPage">
+              Loading...
+            </strong>
+          </div>
+
+          <div>
+            <span>Node Runtime</span>
+            <strong id="serverNodePage">
+              Loading...
+            </strong>
+          </div>
+
+          <div>
+            <span>Process</span>
+            <strong id="serverPidPage">
+              Loading...
+            </strong>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         MONITORING
+    ================================================== -->
+
+    <section
+      id="monitoring"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            TELEMETRY
+          </span>
+
+          <h1>
+            Monitoring
+          </h1>
+
+          <p>
+            Live server resource telemetry.
+          </p>
+        </div>
+
+        <div class="live-badge">
+          <span></span>
+          LIVE
+        </div>
+
+      </div>
+
+
+      <div class="monitor-big-grid">
+
+        <div class="panel monitor-big">
+          <span>CPU UTILIZATION</span>
+          <strong id="monitorCPU">0%</strong>
+          <div class="metric-bar">
+            <i id="monitorCPUBar"></i>
+          </div>
+        </div>
+
+        <div class="panel monitor-big">
+          <span>MEMORY UTILIZATION</span>
+          <strong id="monitorRAM">0%</strong>
+          <div class="metric-bar">
+            <i id="monitorRAMBar"></i>
+          </div>
+        </div>
+
+        <div class="panel monitor-big">
+          <span>STORAGE UTILIZATION</span>
+          <strong id="monitorDisk">0%</strong>
+          <div class="metric-bar">
+            <i id="monitorDiskBar"></i>
+          </div>
+        </div>
+
+      </div>
+
+
+      <div class="panel monitoring-chart-panel">
+
+        <div class="panel-head">
+
+          <div>
+            <span class="panel-kicker">
+              TELEMETRY GRAPH
+            </span>
+
+            <h2>
+              Resource History
+            </h2>
+          </div>
+
+          <span class="chart-live">
+            Updating every 5 seconds
+          </span>
+
+        </div>
+
+        <div class="large-chart tall">
+          <canvas id="monitorChart"></canvas>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         NETWORK
+    ================================================== -->
+
+    <section
+      id="network"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            CONNECTIVITY
+          </span>
+
+          <h1>
+            Network
+          </h1>
+
+          <p>
+            Interfaces and network addressing.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div
+        id="networkPage"
+        class="network-page-grid"
+      >
+        Loading...
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         SERVICES
+    ================================================== -->
+
+    <section
+      id="services"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            INFRASTRUCTURE
+          </span>
+
+          <h1>
+            Services
+          </h1>
+
+          <p>
+            Current service health.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div
+        id="servicesPage"
+        class="services-page-grid"
+      >
+        Loading...
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         CONSOLE
+    ================================================== -->
+
+    <section
+      id="console"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            DIAGNOSTICS
+          </span>
+
+          <h1>
+            Console
+          </h1>
+
+          <p>
+            Controlled server diagnostics.
+          </p>
+        </div>
+
+        <span class="security-pill">
+          SAFE MODE
+        </span>
+
+      </div>
+
+
+      <div class="console-panel panel">
+
+        <div class="console-top">
+
+          <div>
+            <span class="console-dot"></span>
+            NICEGOLD DIAGNOSTIC TERMINAL
+          </div>
+
+          <span>
+            CONTROLLED ACCESS
+          </span>
+
+        </div>
+
+
+        <div
+          id="consoleOutput"
+          class="console-output"
+        >
+          <div>
+            NICEGOLD Diagnostic Console v3.0
+          </div>
+
+          <div>
+            System diagnostics ready.
+          </div>
+
+          <div>
+            Type <b>help</b> to see available commands.
+          </div>
+
+        </div>
+
+
+        <form
+          id="consoleForm"
+          class="console-input"
+        >
+
+          <span>
+            nicegold@vps:~$
+          </span>
+
+          <input
+            id="consoleInput"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Type a diagnostic command..."
+          >
+
+          <button>
+            RUN
+          </button>
+
+        </form>
+
+      </div>
+
+
+      <div class="console-command-grid">
+
+        <button data-command="status">
+          status
+        </button>
+
+        <button data-command="uptime">
+          uptime
+        </button>
+
+        <button data-command="memory">
+          memory
+        </button>
+
+        <button data-command="disk">
+          disk
+        </button>
+
+        <button data-command="network">
+          network
+        </button>
+
+        <button data-command="cpu">
+          cpu
+        </button>
+
+        <button data-command="node">
+          node
+        </button>
+
+        <button data-command="os">
+          os
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         LOGS
+    ================================================== -->
+
+    <section
+      id="logs"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            AUDIT TRAIL
+          </span>
+
+          <h1>
+            Activity
+          </h1>
+
+          <p>
+            Recent panel and system events.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div
+        id="logsPage"
+        class="logs-page panel"
+      >
+        Loading...
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         SECURITY
+    ================================================== -->
+
+    <section
+      id="security"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            PROTECTION
+          </span>
+
+          <h1>
+            Security
+          </h1>
+
+          <p>
+            Panel protection and access status.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div
+        id="securityPage"
+        class="security-grid"
+      >
+        Loading...
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         BACKUPS
+    ================================================== -->
+
+    <section
+      id="backups"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            DATA PROTECTION
+          </span>
+
+          <h1>
+            Backups
+          </h1>
+
+          <p>
+            Server backup readiness.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div
+        id="backupPage"
+        class="backup-card panel"
+      >
+        Loading...
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         SETTINGS
+    ================================================== -->
+
+    <section
+      id="settings"
+      class="page-section"
+    >
+
+      <div class="page-header">
+
+        <div>
+          <span class="panel-kicker">
+            CONFIGURATION
+          </span>
+
+          <h1>
+            Settings
+          </h1>
+
+          <p>
+            NICEGOLD panel configuration.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="settings-grid">
+
+        <div class="panel setting-card">
+
+          <span>
+            PANEL VERSION
+          </span>
+
+          <strong>
+            NICEGOLD V3.0
+          </strong>
+
+          <small>
+            Premium VPS Control Panel
+          </small>
+
+        </div>
+
+
+        <div class="panel setting-card">
+
+          <span>
+            REFRESH INTERVAL
+          </span>
+
+          <strong>
+            5 SECONDS
+          </strong>
+
+          <small>
+            Live dashboard updates
+          </small>
+
+        </div>
+
+
+        <div class="panel setting-card">
+
+          <span>
+            CONSOLE MODE
+          </span>
+
+          <strong>
+            CONTROLLED
+          </strong>
+
+          <small>
+            Restricted diagnostics only
+          </small>
+
+        </div>
+
+
+        <div class="panel setting-card">
+
+          <span>
+            INTERFACE
+          </span>
+
+          <strong>
+            DARK CINEMATIC
+          </strong>
+
+          <small>
+            NICEGOLD premium theme
+          </small>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- MOBILE NAV -->
+
+  <nav class="mobile-nav">
+
+    <button
+      class="active"
+      data-section="dashboard"
+    >
+      <span>▦</span>
+      Home
+    </button>
+
+    <button
+      data-section="monitoring"
+    >
+      <span>◌</span>
+      Monitor
+    </button>
+
+    <button
+      data-section="network"
+    >
+      <span>⌁</span>
+      Network
+    </button>
+
+    <button
+      data-section="console"
+    >
+      <span>&gt;_</span>
+      Console
+    </button>
+
+    <button
+      id="mobileMore"
+    >
+      <span>☰</span>
+      More
+    </button>
+
+  </nav>
+
+
+</div>
+
+
+<script src="/app.js"></script>
+
+</body>
+</html>

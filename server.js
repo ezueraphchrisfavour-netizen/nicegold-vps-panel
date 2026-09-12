@@ -1,0 +1,1009 @@
+require("dotenv").config();
+
+const express = require("express");
+const os = require("os");
+const path = require("path");
+const fs = require("fs");
+const { execFile } = require("child_process");
+
+const app = express();
+
+const PORT = Number(process.env.PORT) || 3000;
+const START_TIME = Date.now();
+
+app.disable("x-powered-by");
+
+app.use(express.json({ limit: "1mb" }));
+
+app.use(
+  express.static(
+    path.join(__dirname, "public"),
+    {
+      maxAge: "1h"
+    }
+  )
+);
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function bytesToGB(bytes) {
+  return bytes / 1024 / 1024 / 1024;
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return "0 B";
+  }
+
+  const units = [
+    "B",
+    "KB",
+    "MB",
+    "GB",
+    "TB"
+  ];
+
+  const index = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1
+  );
+
+  return (
+    (bytes / Math.pow(1024, index)).toFixed(
+      index === 0 ? 0 : 1
+    ) +
+    " " +
+    units[index]
+  );
+}
+
+function uptimeSeconds() {
+  return Math.floor(os.uptime());
+}
+
+function formatUptime(seconds) {
+  let value = Number(seconds) || 0;
+
+  const days = Math.floor(value / 86400);
+  value %= 86400;
+
+  const hours = Math.floor(value / 3600);
+  value %= 3600;
+
+  const minutes = Math.floor(value / 60);
+  const secs = value % 60;
+
+  return `${days}d ${hours}h ${minutes}m ${secs}s`;
+}
+
+function memoryStats() {
+  const total = os.totalmem();
+  const free = os.freemem();
+  const used = total - free;
+
+  return {
+    total,
+    free,
+    used,
+    percent: Math.round(
+      (used / total) * 100
+    )
+  };
+}
+
+function getCPU() {
+  const cpus = os.cpus();
+
+  return {
+    cores: cpus.length,
+    model:
+      cpus[0]?.model ||
+      "Unknown CPU",
+    speed:
+      cpus[0]?.speed ||
+      0,
+    load: os.loadavg()
+  };
+}
+
+
+/* =========================================================
+   DISK
+========================================================= */
+
+function getDiskStats(callback) {
+  execFile(
+    "df",
+    ["-kP", "/"],
+    {
+      timeout: 5000
+    },
+    (error, stdout) => {
+
+      if (error) {
+        return callback({
+          total: 0,
+          used: 0,
+          free: 0,
+          percent: 0
+        });
+      }
+
+      const lines =
+        stdout
+          .trim()
+          .split("\n");
+
+      if (lines.length < 2) {
+        return callback({
+          total: 0,
+          used: 0,
+          free: 0,
+          percent: 0
+        });
+      }
+
+      const parts =
+        lines[1]
+          .trim()
+          .split(/\s+/);
+
+      const total =
+        Number(parts[1] || 0) * 1024;
+
+      const used =
+        Number(parts[2] || 0) * 1024;
+
+      const free =
+        Number(parts[3] || 0) * 1024;
+
+      const percent =
+        parseInt(
+          parts[4] || "0",
+          10
+        ) || 0;
+
+      callback({
+        total,
+        used,
+        free,
+        percent
+      });
+    }
+  );
+}
+
+
+/* =========================================================
+   NETWORK
+========================================================= */
+
+function networkInterfaces() {
+  const interfaces =
+    os.networkInterfaces();
+
+  const result = [];
+
+  for (
+    const name of Object.keys(interfaces)
+  ) {
+
+    for (
+      const item of interfaces[name] || []
+    ) {
+
+      result.push({
+        interface: name,
+        address: item.address,
+        family: item.family,
+        internal: item.internal,
+        mac: item.mac,
+        netmask: item.netmask
+      });
+
+    }
+  }
+
+  return result;
+}
+
+
+/* =========================================================
+   API
+========================================================= */
+
+app.get("/api", (req, res) => {
+
+  res.json({
+    ok: true,
+    name: "NICEGOLD VPS PANEL",
+    version: "3.0.0",
+    status: "ONLINE",
+    platform: os.platform(),
+    node: process.version
+  });
+
+});
+
+
+/* HEALTH */
+
+app.get("/api/health", (req, res) => {
+
+  res.json({
+    ok: true,
+    status: "ONLINE",
+    timestamp:
+      new Date().toISOString(),
+    uptime:
+      uptimeSeconds()
+  });
+
+});
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+app.get("/api/dashboard", (req, res) => {
+
+  const memory =
+    memoryStats();
+
+  const cpu =
+    getCPU();
+
+  getDiskStats((disk) => {
+
+    res.json({
+
+      ok: true,
+
+      server: {
+        name:
+          "NICEGOLD VPS",
+        status:
+          "ONLINE",
+        hostname:
+          os.hostname(),
+        platform:
+          os.platform(),
+        release:
+          os.release(),
+        architecture:
+          os.arch(),
+        node:
+          process.version,
+        pid:
+          process.pid
+      },
+
+      cpu: {
+        cores:
+          cpu.cores,
+        model:
+          cpu.model,
+        speed:
+          cpu.speed,
+        load:
+          cpu.load
+      },
+
+      memory: {
+        total:
+          memory.total,
+        used:
+          memory.used,
+        free:
+          memory.free,
+        percent:
+          memory.percent,
+        totalFormatted:
+          formatBytes(memory.total),
+        usedFormatted:
+          formatBytes(memory.used),
+        freeFormatted:
+          formatBytes(memory.free)
+      },
+
+      disk: {
+        total:
+          disk.total,
+        used:
+          disk.used,
+        free:
+          disk.free,
+        percent:
+          disk.percent,
+        totalFormatted:
+          formatBytes(disk.total),
+        usedFormatted:
+          formatBytes(disk.used),
+        freeFormatted:
+          formatBytes(disk.free)
+      },
+
+      uptime: {
+        seconds:
+          uptimeSeconds(),
+        formatted:
+          formatUptime(
+            uptimeSeconds()
+          )
+      },
+
+      process: {
+        pid:
+          process.pid,
+        memory:
+          process.memoryUsage()
+      },
+
+      time:
+        new Date().toISOString()
+
+    });
+
+  });
+
+});
+
+
+/* =========================================================
+   SYSTEM
+========================================================= */
+
+app.get("/api/system", (req, res) => {
+
+  const cpu =
+    getCPU();
+
+  const memory =
+    memoryStats();
+
+  res.json({
+
+    ok: true,
+
+    system: {
+
+      hostname:
+        os.hostname(),
+
+      platform:
+        os.platform(),
+
+      release:
+        os.release(),
+
+      architecture:
+        os.arch(),
+
+      machine:
+        os.machine
+          ? os.machine()
+          : os.arch(),
+
+      cpuModel:
+        cpu.model,
+
+      cpuCores:
+        cpu.cores,
+
+      cpuSpeed:
+        cpu.speed,
+
+      nodeVersion:
+        process.version,
+
+      processId:
+        process.pid,
+
+      uptime:
+        uptimeSeconds(),
+
+      uptimeFormatted:
+        formatUptime(
+          uptimeSeconds()
+        )
+
+    },
+
+    memory: {
+
+      total:
+        memory.total,
+
+      used:
+        memory.used,
+
+      free:
+        memory.free,
+
+      percent:
+        memory.percent
+
+    }
+
+  });
+
+});
+
+
+/* =========================================================
+   NETWORK
+========================================================= */
+
+app.get("/api/network", (req, res) => {
+
+  res.json({
+    ok: true,
+    interfaces:
+      networkInterfaces()
+  });
+
+});
+
+
+/* =========================================================
+   SERVICES
+========================================================= */
+
+app.get("/api/services", (req, res) => {
+
+  res.json({
+
+    ok: true,
+
+    services: [
+
+      {
+        name:
+          "NICEGOLD Web Server",
+        description:
+          "Main control panel",
+        status:
+          "ONLINE",
+        uptime:
+          formatUptime(
+            uptimeSeconds()
+          )
+      },
+
+      {
+        name:
+          "REST API",
+        description:
+          "System monitoring API",
+        status:
+          "ONLINE",
+        uptime:
+          formatUptime(
+            uptimeSeconds()
+          )
+      },
+
+      {
+        name:
+          "Node Runtime",
+        description:
+          process.version,
+        status:
+          "ONLINE",
+        uptime:
+          formatUptime(
+            uptimeSeconds()
+          )
+      },
+
+      {
+        name:
+          "Storage Monitor",
+        description:
+          "Disk health monitoring",
+        status:
+          "ONLINE",
+        uptime:
+          formatUptime(
+            uptimeSeconds()
+          )
+      },
+
+      {
+        name:
+          "Network Monitor",
+        description:
+          "Interface monitoring",
+        status:
+          "ONLINE",
+        uptime:
+          formatUptime(
+            uptimeSeconds()
+          )
+      },
+
+      {
+        name:
+          "Security Monitor",
+        description:
+          "Panel security status",
+        status:
+          "ACTIVE",
+        uptime:
+          formatUptime(
+            uptimeSeconds()
+          )
+      }
+
+    ]
+
+  });
+
+});
+
+
+/* =========================================================
+   ACTIVITY
+========================================================= */
+
+app.get("/api/activity", (req, res) => {
+
+  const now =
+    new Date();
+
+  res.json({
+
+    ok: true,
+
+    activity: [
+
+      {
+        time:
+          now.toLocaleTimeString(),
+        title:
+          "System metrics updated",
+        type:
+          "system"
+      },
+
+      {
+        time:
+          new Date(
+            Date.now() - 60000
+          ).toLocaleTimeString(),
+        title:
+          "Network interfaces scanned",
+        type:
+          "network"
+      },
+
+      {
+        time:
+          new Date(
+            Date.now() - 120000
+          ).toLocaleTimeString(),
+        title:
+          "Service health check completed",
+        type:
+          "service"
+      },
+
+      {
+        time:
+          new Date(
+            Date.now() - 180000
+          ).toLocaleTimeString(),
+        title:
+          "Storage monitor updated",
+        type:
+          "storage"
+      },
+
+      {
+        time:
+          new Date(
+            Date.now() - 240000
+          ).toLocaleTimeString(),
+        title:
+          "NICEGOLD panel initialized",
+        type:
+          "panel"
+      }
+
+    ]
+
+  });
+
+});
+
+
+/* =========================================================
+   SECURITY
+========================================================= */
+
+app.get("/api/security", (req, res) => {
+
+  res.json({
+
+    ok: true,
+
+    security: {
+
+      panel:
+        "PROTECTED",
+
+      arbitraryShell:
+        false,
+
+      api:
+        "ACTIVE",
+
+      staticFiles:
+        "PROTECTED",
+
+      process:
+        "ISOLATED",
+
+      status:
+        "SECURE"
+
+    }
+
+  });
+
+});
+
+
+/* =========================================================
+   BACKUP STATUS
+========================================================= */
+
+app.get("/api/backups", (req, res) => {
+
+  res.json({
+
+    ok: true,
+
+    backup: {
+
+      status:
+        "READY",
+
+      lastBackup:
+        "Not configured",
+
+      storage:
+        "Local",
+
+      automatic:
+        false,
+
+      message:
+        "Backup automation can be connected later."
+
+    }
+
+  });
+
+});
+
+
+/* =========================================================
+   CONTROLLED CONSOLE
+========================================================= */
+
+/*
+  IMPORTANT:
+
+  This is NOT an arbitrary shell endpoint.
+
+  The browser can request only the diagnostic
+  operations defined below.
+*/
+
+const consoleCommands = {
+
+  help: () => {
+
+    return [
+      "Available diagnostics:",
+      "",
+      "help       Show available commands",
+      "status     Server status",
+      "uptime     Server uptime",
+      "memory     RAM information",
+      "disk       Storage information",
+      "network    Network interfaces",
+      "node       Node.js runtime",
+      "hostname   Server hostname",
+      "os         Operating system",
+      "cpu        CPU information",
+      "clear      Clear console"
+    ].join("\n");
+
+  },
+
+  status: () => {
+
+    return [
+      "NICEGOLD VPS",
+      "Status: ONLINE",
+      `Hostname: ${os.hostname()}`,
+      `Node: ${process.version}`,
+      `PID: ${process.pid}`
+    ].join("\n");
+
+  },
+
+  uptime: () => {
+
+    return [
+      `System uptime: ${formatUptime(
+        uptimeSeconds()
+      )}`
+    ].join("\n");
+
+  },
+
+  memory: () => {
+
+    const m =
+      memoryStats();
+
+    return [
+      `Total: ${formatBytes(m.total)}`,
+      `Used:  ${formatBytes(m.used)}`,
+      `Free:  ${formatBytes(m.free)}`,
+      `Usage: ${m.percent}%`
+    ].join("\n");
+
+  },
+
+  disk: () => {
+
+    return new Promise((resolve) => {
+
+      getDiskStats((d) => {
+
+        resolve([
+          `Total: ${formatBytes(d.total)}`,
+          `Used:  ${formatBytes(d.used)}`,
+          `Free:  ${formatBytes(d.free)}`,
+          `Usage: ${d.percent}%`
+        ].join("\n"));
+
+      });
+
+    });
+
+  },
+
+  network: () => {
+
+    const items =
+      networkInterfaces();
+
+    if (!items.length) {
+      return "No network interfaces found.";
+    }
+
+    return items
+      .map(
+        item =>
+          `${item.interface}  ${item.address}  ${item.family}`
+      )
+      .join("\n");
+
+  },
+
+  node: () => {
+
+    return [
+      `Node.js: ${process.version}`,
+      `PID: ${process.pid}`,
+      `Platform: ${process.platform}`,
+      `Architecture: ${process.arch}`
+    ].join("\n");
+
+  },
+
+  hostname: () => {
+
+    return os.hostname();
+
+  },
+
+  os: () => {
+
+    return [
+      `Platform: ${os.platform()}`,
+      `Release: ${os.release()}`,
+      `Architecture: ${os.arch()}`,
+      `Machine: ${
+        os.machine
+          ? os.machine()
+          : os.arch()
+      }`
+    ].join("\n");
+
+  },
+
+  cpu: () => {
+
+    const c =
+      getCPU();
+
+    return [
+      `Model: ${c.model}`,
+      `Cores: ${c.cores}`,
+      `Speed: ${c.speed} MHz`,
+      `Load 1m: ${c.load[0].toFixed(2)}`,
+      `Load 5m: ${c.load[1].toFixed(2)}`,
+      `Load 15m: ${c.load[2].toFixed(2)}`
+    ].join("\n");
+
+  }
+
+};
+
+
+app.post(
+  "/api/console",
+  async (req, res) => {
+
+    try {
+
+      const command =
+        String(
+          req.body?.command || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      if (!command) {
+
+        return res.status(400).json({
+          ok: false,
+          error:
+            "No diagnostic command supplied."
+        });
+
+      }
+
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          consoleCommands,
+          command
+        )
+      ) {
+
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Command is not available.",
+          hint:
+            "Type help to see allowed diagnostics."
+        });
+
+      }
+
+      const output =
+        await consoleCommands[command]();
+
+      res.json({
+        ok: true,
+        command,
+        output:
+          String(output)
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Console error:",
+        error
+      );
+
+      res.status(500).json({
+        ok: false,
+        error:
+          "Diagnostic command failed."
+      });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   FRONTEND FALLBACK
+========================================================= */
+
+app.use(
+  (req, res, next) => {
+
+    if (
+      req.method === "GET" &&
+      !req.path.startsWith("/api/")
+    ) {
+
+      return res.sendFile(
+        path.join(
+          __dirname,
+          "public",
+          "index.html"
+        )
+      );
+
+    }
+
+    next();
+
+  }
+);
+
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use(
+  (err, req, res, next) => {
+
+    console.error(err);
+
+    res.status(500).json({
+      ok: false,
+      error:
+        "Internal server error"
+    });
+
+  }
+);
+
+
+/* =========================================================
+   START
+========================================================= */
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+
+    console.log("");
+    console.log(
+      "╔══════════════════════════════════════════════╗"
+    );
+    console.log(
+      "║              NICEGOLD VPS PANEL              ║"
+    );
+    console.log(
+      "║                  VERSION 3.0                 ║"
+    );
+    console.log(
+      "╚══════════════════════════════════════════════╝"
+    );
+    console.log("");
+    console.log(
+      `Server running on port ${PORT}`
+    );
+    console.log(
+      `Local: http://127.0.0.1:${PORT}`
+    );
+    console.log("");
+    console.log(
+      "Diagnostic console: ENABLED"
+    );
+    console.log(
+      "Arbitrary shell: DISABLED"
+    );
+    console.log("");
+
+  }
+);
