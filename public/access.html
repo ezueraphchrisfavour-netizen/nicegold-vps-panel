@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NICEGOLD | Secure Access Center</title>
+
+  <style>
+    :root {
+      --bg: #05080d;
+      --panel: rgba(11, 17, 25, 0.86);
+      --panel-2: rgba(15, 23, 33, 0.92);
+      --border: rgba(255,255,255,0.09);
+      --text: #f5f8fc;
+      --muted: #8d9aaa;
+      --green: #19d47b;
+      --green-dark: #0b8f53;
+      --red: #ff4d5e;
+      --yellow: #ffbf3f;
+      --blue: #3f8cff;
+      --cyan: #32d8ff;
+      --shadow: 0 25px 80px rgba(0,0,0,.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        linear-gradient(rgba(3,7,12,.78), rgba(3,7,12,.92)),
+        url("/clanlogo.jpg") center/cover fixed no-repeat;
+      color: var(--text);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: linear-gradient(to bottom, black, transparent);
+    }
+
+    .glow {
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: .13;
+      pointer-events: none;
+    }
+
+    .glow.one {
+      background: #0b78ff;
+      top: -180px;
+      left: -100px;
+    }
+
+    .glow.two {
+      background: #00e89a;
+      right: -180px;
+      bottom: -160px;
+    }
+
+    .topbar {
+      height: 76px;
+      padding: 0 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(4,8,13,.78);
+      backdrop-filter: blur(22px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 45px;
+      height: 45px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 900;
+      background: linear-gradient(145deg, rgba(63,140,255,.22), rgba(25,212,123,.12));
+      border: 1px solid rgba(90,160,255,.25);
+      box-shadow: inset 0 0 25px rgba(63,140,255,.08);
+    }
+
+    .brand-name {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 1.4px;
+    }
+
+    .brand-sub {
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: 3px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    .engine {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 15px;
+      border: 1px solid rgba(25,212,123,.22);
+      border-radius: 999px;
+      background: rgba(25,212,123,.06);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .engine-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 14px var(--green);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      50% { opacity: .35; transform: scale(.75); }
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 42px auto 70px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .eyebrow {
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 2.8px;
+      margin-bottom: 13px;
+    }
+
+    .hero h1 {
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.04;
+      letter-spacing: -1.5px;
+      margin-bottom: 15px;
+    }
+
+    .hero p {
+      max-width: 680px;
+      margin: auto;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(15,23,33,.91), rgba(7,12,18,.91));
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px);
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 23px 25px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: .5px;
+    }
+
+    .card-desc {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 5px;
+    }
+
+    .tag {
+      padding: 7px 10px;
+      border-radius: 7px;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .tag.green {
+      color: var(--green);
+      background: rgba(25,212,123,.09);
+      border: 1px solid rgba(25,212,123,.18);
+    }
+
+    .tag.blue {
+      color: var(--cyan);
+      background: rgba(50,216,255,.07);
+      border: 1px solid rgba(50,216,255,.15);
+    }
+
+    .body {
+      padding: 25px;
+    }
+
+    .switcher {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 5px;
+      background: rgba(0,0,0,.25);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 23px;
+    }
+
+    .switcher button {
+      height: 43px;
+      border: 0;
+      border-radius: 8px;
+      color: var(--muted);
+      background: transparent;
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: .6px;
+      cursor: pointer;
+    }
+
+    .switcher button.active {
+      color: white;
+      background: rgba(63,140,255,.14);
+      box-shadow: inset 0 0 0 1px rgba(63,140,255,.18);
+    }
+
+    .form {
+      display: none;
+    }
+
+    .form.active {
+      display: block;
+      animation: show .22s ease;
+    }
+
+    @keyframes show {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .field {
+      margin-bottom: 17px;
+    }
+
+    label {
+      display: block;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: .5px;
+    }
+
+    input {
+      width: 100%;
+      height: 48px;
+      padding: 0 14px;
+      color: white;
+      background: rgba(0,0,0,.28);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 10px;
+      outline: none;
+      font-size: 13px;
+      transition: .18s ease;
+    }
+
+    input::placeholder {
+      color: #596675;
+    }
+
+    input:focus {
+      border-color: rgba(63,140,255,.55);
+      box-shadow: 0 0 0 3px rgba(63,140,255,.08);
+      background: rgba(0,0,0,.4);
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 13px;
+    }
+
+    .btn {
+      width: 100%;
+      height: 49px;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      color: white;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      transition: .18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-blue {
+      background: linear-gradient(135deg, #2877ef, #3d98ff);
+      box-shadow: 0 10px 28px rgba(45,125,255,.18);
+    }
+
+    .btn-green {
+      background: linear-gradient(135deg, #0cae64, #1bd67f);
+      box-shadow: 0 10px 28px rgba(25,212,123,.15);
+    }
+
+    .btn-red {
+      background: linear-gradient(135deg, #d93649, #ff5363);
+    }
+
+    .btn-dark {
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+    }
+
+    .notice {
+      display: none;
+      margin-top: 15px;
+      padding: 13px 14px;
+      border-radius: 10px;
+      font-size: 11px;
+      line-height: 1.5;
+      border: 1px solid;
+    }
+
+    .notice.show {
+      display: block;
+    }
+
+    .notice.success {
+      color: #74f3b5;
+      background: rgba(25,212,123,.07);
+      border-color: rgba(25,212,123,.2);
+    }
+
+    .notice.error {
+      color: #ff8b97;
+      background: rgba(255,77,94,.07);
+      border-color: rgba(255,77,94,.2);
+    }
+
+    .notice.info {
+      color: #8bc6ff;
+      background: rgba(63,140,255,.07);
+      border-color: rgba(63,140,255,.2);
+    }
+
+    .status-panel {
+      min-height: 385px;
+    }
+
+    .status-box {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      background: rgba(0,0,0,.19);
+      margin-bottom: 17px;
+    }
+
+    .status-label {
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      margin-bottom: 9px;
+    }
+
+    .status {
+      font-size: 26px;
+      font-weight: 950;
+      letter-spacing: 1px;
+    }
+
+    .status.pending { color: var(--yellow); }
+    .status.approved { color: var(--green); }
+    .status.rejected,
+    .status.suspended { color: var(--red); }
+    .status.offline { color: #64748b; }
+
+    .status-message {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .progress {
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.07);
+      overflow: hidden;
+      margin-top: 17px;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 15%;
+      background: var(--yellow);
+      border-radius: inherit;
+      transition: width .35s ease;
+    }
+
+    .info-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 17px;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 12px 13px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.025);
+      border: 1px solid rgba(255,255,255,.045);
+    }
+
+    .info-row span:first-child {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .info-row span:last-child {
+      color: #e8edf5;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .approved-actions {
+      display: none;
+      margin-top: 17px;
+      gap: 10px;
+    }
+
+    .approved-actions.show {
+      display: grid;
+    }
+
+    .security-note {
+      margin-top: 19px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(50,216,255,.035);
+      border: 1px solid rgba(50,216,255,.09);
+      color: #8293a7;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 28px;
+      color: #536171;
+      font-size: 10px;
+      letter-spacing: .8px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 850px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .status-panel {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 580px) {
+      .topbar {
+        height: 68px;
+        padding: 0 17px;
+      }
+
+      .brand-sub {
+        display: none;
+      }
+
+      .engine {
+        padding: 8px 10px;
+        font-size: 9px;
+      }
+
+      .page {
+        width: min(100% - 20px, 1180px);
+        margin-top: 27px;
+      }
+
+      .hero h1 {
+        font-size: 34px;
+      }
+
+      .hero p {
+        font-size: 13px;
+      }
+
+      .card-head,
+      .body {
+        padding: 19px;
+      }
+
+      .two {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="glow one"></div>
+  <div class="glow two"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">⃝</div>
+      <div>
+        <div class="brand-name">𝗡𝗜𝗖𝗘𝗚𝗢𝗟𝗗</div>
+        <div class="brand-sub">VPS Infrastructure Division</div>
+      </div>
+    </div>
+
+    <div class="engine">
+      <span class="engine-dot"></span>
+      ACCESS ENGINE ONLINE
+    </div>
+  </header>
+
+  <main class="page">
+
+    <section class="hero">
+      <div class="eyebrow">AUTHORIZED ACCESS CENTER</div>
+      <h1>Your VPS Gateway</h1>
+      <p>
+        Request access to the NICEGOLD VPS infrastructure or sign in to
+        monitor the status of an existing access request.
+      </p>
+    </section>
+
+    <section class="grid">
+
+      <!-- AUTHENTICATION CARD -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Account Access</div>
+            <div class="card-desc">Secure identity and access management</div>
+          </div>
+          <div class="tag blue">SECURE</div>
+        </div>
+
+        <div class="body">
+
+          <div class="switcher">
+            <button id="loginTab" class="active" onclick="showForm('login')">
+              SIGN IN
+            </button>
+
+            <button id="registerTab" onclick="showForm('register')">
+              REQUEST ACCESS
+            </button>
+          </div>
+
+          <!-- LOGIN -->
+          <form id="loginForm" class="form active">
+
+            <div class="field">
+              <label>USERNAME</label>
+              <input
+                id="loginUsername"
+                type="text"
+                autocomplete="username"
+                placeholder="Enter your username"
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label>PASSWORD</label>
+              <input
+                id="loginPassword"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Enter your password"
+                required
+              >
+            </div>
+
+            <button class="btn btn-blue" type="submit">
+              SIGN IN TO ACCESS CENTER
+            </button>
+
+            <div id="loginNotice" class="notice"></div>
+
+          </form>
+
+          <!-- REGISTRATION -->
+          <form id="registerForm" class="form">
+
+            <div class="field">
+              <label>FULL NAME</label>
+              <input
+                id="registerName"
+                type="text"
+                autocomplete="name"
+                placeholder="Enter your full name"
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label>USERNAME</label>
+              <input
+                id="registerUsername"
+                type="text"
+                autocomplete="username"
+                placeholder="Choose a username"
+                minlength="3"
+                required
+              >
+            </div>
+
+            <div class="two">
+
+              <div class="field">
+                <label>PASSWORD</label>
+                <input
+                  id="registerPassword"
+                  type="password"
+                  autocomplete="new-password"
+                  placeholder="Minimum 8 characters"
+                  minlength="8"
+                  required
+                >
+              </div>
+
+              <div class="field">
+                <label>CONFIRM PASSWORD</label>
+                <input
+                  id="registerConfirm"
+                  type="password"
+                  autocomplete="new-password"
+                  placeholder="Repeat password"
+                  minlength="8"
+                  required
+                >
+              </div>
+
+            </div>
+
+            <button class="btn btn-green" type="submit">
+              SUBMIT ACCESS REQUEST
+            </button>
+
+            <div id="registerNotice" class="notice"></div>
+
+            <div class="security-note">
+              Your request will enter the NICEGOLD administrative approval
+              queue. VPS access is not granted automatically. An administrator
+              must approve the account before protected VPS resources become
+              available.
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+
+
+      <!-- STATUS CARD -->
+      <div class="card status-panel">
+
+        <div class="card-head">
+          <div>
+            <div class="card-title">Access Status</div>
+            <div class="card-desc">Live authorization state</div>
+          </div>
+
+          <div id="statusTag" class="tag green">MONITORING</div>
+        </div>
+
+        <div class="body">
+
+          <div class="status-box">
+
+            <div class="status-label">CURRENT AUTHORIZATION</div>
+
+            <div id="statusText" class="status offline">
+              NOT SIGNED IN
+            </div>
+
+            <div id="statusMessage" class="status-message">
+              Sign in or submit an access request to continue.
+            </div>
+
+            <div class="progress">
+              <span id="progressBar"></span>
+            </div>
+
+          </div>
+
+          <div class="info-list">
+
+            <div class="info-row">
+              <span>ACCOUNT</span>
+              <span id="accountName">Not available</span>
+            </div>
+
+            <div class="info-row">
+              <span>USERNAME</span>
+              <span id="accountUsername">Not available</span>
+            </div>
+
+            <div class="info-row">
+              <span>REQUEST DATE</span>
+              <span id="requestDate">Not available</span>
+            </div>
+
+            <div class="info-row">
+              <span>ROLE</span>
+              <span id="accountRole">Not available</span>
+            </div>
+
+          </div>
+
+          <div id="approvedActions" class="approved-actions">
+
+            <button
+              id="openVpsBtn"
+              class="btn btn-green"
+              type="button"
+              onclick="openVPS()"
+            >
+              OPEN VPS CONTROL PANEL
+            </button>
+
+            <button
+              class="btn btn-dark"
+              type="button"
+              onclick="logout()"
+            >
+              SIGN OUT
+            </button>
+
+          </div>
+
+          <div id="normalLogout" class="approved-actions">
+
+            <button
+              class="btn btn-dark"
+              type="button"
+              onclick="logout()"
+            >
+              SIGN OUT
+            </button>
+
+          </div>
+
+          <div class="security-note">
+            <strong>SECURITY GATE:</strong>
+            VPS infrastructure endpoints are protected server-side.
+            Pending, rejected and suspended accounts cannot access the VPS
+            control API even if they attempt to bypass this interface.
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <div class="footer">
+      NICEGOLD VPS INFRASTRUCTURE • ACCESS ENGINE • AUTHORIZATION CONTROL
+    </div>
+
+  </main>
+
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    let statusTimer = null;
+
+    function showForm(type) {
+      const login = type === "login";
+
+      $("loginTab").classList.toggle("active", login);
+      $("registerTab").classList.toggle("active", !login);
+
+      $("loginForm").classList.toggle("active", login);
+      $("registerForm").classList.toggle("active", !login);
+
+      clearNotice("loginNotice");
+      clearNotice("registerNotice");
+    }
+
+    function showNotice(id, message, type) {
+      const box = $(id);
+      box.textContent = message;
+      box.className = "notice show " + type;
+    }
+
+    function clearNotice(id) {
+      const box = $(id);
+      box.textContent = "";
+      box.className = "notice";
+    }
+
+    function setStatus(status, message) {
+      const text = $("statusText");
+      const tag = $("statusTag");
+      const progress = $("progressBar");
+
+      text.className = "status";
+      tag.className = "tag";
+      
+      const value = String(status || "OFFLINE").toUpperCase();
+
+      if (value === "APPROVED") {
+        text.textContent = "APPROVED";
+        text.classList.add("approved");
+
+        tag.textContent = "AUTHORIZED";
+        tag.classList.add("green");
+
+        progress.style.width = "100%";
+        progress.style.background = "var(--green)";
+
+        $("statusMessage").textContent =
+          message || "Your VPS access has been approved.";
+
+      } else if (value === "PENDING") {
+        text.textContent = "PENDING";
+        text.classList.add("pending");
+
+        tag.textContent = "UNDER REVIEW";
+        tag.classList.add("blue");
+
+        progress.style.width = "55%";
+        progress.style.background = "var(--yellow)";
+
+        $("statusMessage").textContent =
+          message || "Your access request is waiting for administrator approval.";
+
+      } else if (value === "REJECTED") {
+        text.textContent = "REJECTED";
+        text.classList.add("rejected");
+
+        tag.textContent = "ACCESS DENIED";
+        tag.classList.add("red");
+
+        progress.style.width = "0%";
+        progress.style.background = "var(--red)";
+
+        $("statusMessage").textContent =
+          message || "Your access request was rejected.";
+
+      } else if (value === "SUSPENDED") {
+        text.textContent = "SUSPENDED";
+        text.classList.add("suspended");
+
+        tag.textContent = "ACCESS BLOCKED";
+        tag.classList.add("red");
+
+        progress.style.width = "0%";
+        progress.style.background = "var(--red)";
+
+        $("statusMessage").textContent =
+          message || "Your VPS access is currently suspended.";
+
+      } else {
+        text.textContent = "NOT SIGNED IN";
+        text.classList.add("offline");
+
+        tag.textContent = "MONITORING";
+        tag.classList.add("green");
+
+        progress.style.width = "15%";
+        progress.style.background = "var(--blue)";
+
+        $("statusMessage").textContent =
+          message || "Sign in or submit an access request to continue.";
+      }
+    }
+
+    function formatDate(value) {
+      if (!value) return "Not available";
+
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+
+      return date.toLocaleString();
+    }
+
+    function displayUser(user) {
+      if (!user) {
+        $("accountName").textContent = "Not available";
+        $("accountUsername").textContent = "Not available";
+        $("requestDate").textContent = "Not available";
+        $("accountRole").textContent = "Not available";
+
+        $("approvedActions").classList.remove("show");
+        $("normalLogout").classList.remove("show");
+
+        setStatus("OFFLINE");
+        return;
+      }
+
+      $("accountName").textContent = user.name || "Unknown";
+      $("accountUsername").textContent = user.username || "Unknown";
+      $("requestDate").textContent = formatDate(user.createdAt);
+      $("accountRole").textContent = user.role || "user";
+
+      const status = String(user.status || "PENDING").toUpperCase();
+
+      if (status === "APPROVED") {
+        $("approvedActions").classList.add("show");
+        $("normalLogout").classList.remove("show");
+
+        setStatus(
+          "APPROVED",
+          "Your account is authorized. VPS control access is available."
+        );
+      } else {
+        $("approvedActions").classList.remove("show");
+        $("normalLogout").classList.add("show");
+
+        setStatus(status);
+      }
+    }
+
+    async function request(path, options = {}) {
+      const response = await fetch(path, {
+        credentials: "same-origin",
+        cache: "no-store",
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      });
+
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        data
+      };
+    }
+
+    async function loadSession() {
+      try {
+        const result = await request("/api/auth/me");
+
+        if (result.ok && result.data.user) {
+          displayUser(result.data.user);
+        } else {
+          displayUser(null);
+        }
+      } catch {
+        setStatus(
+          "OFFLINE",
+          "Unable to contact the access engine. Check that the server is running."
+        );
+      }
+    }
+
+    $("loginForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      clearNotice("loginNotice");
+
+      const username = $("loginUsername").value.trim();
+      const password = $("loginPassword").value;
+
+      if (!username || !password) {
+        showNotice(
+          "loginNotice",
+          "Enter your username and password.",
+          "error"
+        );
+        return;
+      }
+
+      const button = $("loginForm").querySelector("button[type=submit]");
+      button.disabled = true;
+      button.textContent = "AUTHENTICATING...";
+
+      try {
+        const result = await request("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({
+            username,
+            password
+          })
+        });
+
+        if (!result.ok) {
+          showNotice(
+            "loginNotice",
+            result.data.message || "Invalid username or password.",
+            "error"
+          );
+          return;
+        }
+
+        showNotice(
+          "loginNotice",
+          "Authentication successful. Loading your access status...",
+          "success"
+        );
+
+        await loadSession();
+
+      } catch {
+        showNotice(
+          "loginNotice",
+          "Unable to contact the access engine.",
+          "error"
+        );
+      } finally {
+        button.disabled = false;
+        button.textContent = "SIGN IN TO ACCESS CENTER";
+      }
+    });
+
+
+    $("registerForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      clearNotice("registerNotice");
+
+      const name = $("registerName").value.trim();
+      const username = $("registerUsername").value.trim();
+      const password = $("registerPassword").value;
+      const confirm = $("registerConfirm").value;
+
+      if (!name || !username || !password || !confirm) {
+        showNotice(
+          "registerNotice",
+          "Please complete every required field.",
+          "error"
+        );
+        return;
+      }
+
+      if (username.length < 3) {
+        showNotice(
+          "registerNotice",
+          "Username must contain at least 3 characters.",
+          "error"
+        );
+        return;
+      }
+
+      if (password.length < 8) {
+        showNotice(
+          "registerNotice",
+          "Password must contain at least 8 characters.",
+          "error"
+        );
+        return;
+      }
+
+      if (password !== confirm) {
+        showNotice(
+          "registerNotice",
+          "The passwords do not match.",
+          "error"
+        );
+        return;
+      }
+
+      const button = $("registerForm").querySelector("button[type=submit]");
+      button.disabled = true;
+      button.textContent = "SUBMITTING REQUEST...";
+
+      try {
+        const result = await request("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify({
+            name,
+            username,
+            password
+          })
+        });
+
+        if (!result.ok) {
+          showNotice(
+            "registerNotice",
+            result.data.message || "Unable to create access request.",
+            "error"
+          );
+          return;
+        }
+
+        showNotice(
+          "registerNotice",
+          "Access request submitted successfully. Your account is now PENDING approval.",
+          "success"
+        );
+
+        $("registerPassword").value = "";
+        $("registerConfirm").value = "";
+
+        if (result.data.user) {
+          displayUser(result.data.user);
+        }
+
+        setTimeout(() => {
+          showForm("login");
+
+          $("loginUsername").value = username;
+
+          showNotice(
+            "loginNotice",
+            "Request created. Sign in to monitor your approval status.",
+            "info"
+          );
+        }, 1000);
+
+      } catch {
+        showNotice(
+          "registerNotice",
+          "Unable to contact the access engine.",
+          "error"
+        );
+      } finally {
+        button.disabled = false;
+        button.textContent = "SUBMIT ACCESS REQUEST";
+      }
+    });
+
+
+    async function logout() {
+      try {
+        await request("/api/auth/logout", {
+          method: "POST",
+          body: "{}"
+        });
+      } catch {}
+
+      if (statusTimer) {
+        clearInterval(statusTimer);
+        statusTimer = null;
+      }
+
+      displayUser(null);
+      showForm("login");
+
+      $("loginUsername").value = "";
+      $("loginPassword").value = "";
+
+      showNotice(
+        "loginNotice",
+        "You have been signed out.",
+        "info"
+      );
+    }
+
+
+    function openVPS() {
+      window.location.href = "/vps";
+    }
+
+
+    loadSession();
+
+    statusTimer = setInterval(() => {
+      loadSession();
+    }, 5000);
+
+  </script>
+
+</body>
+</html>
