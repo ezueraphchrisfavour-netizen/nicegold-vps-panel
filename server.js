@@ -3,8 +3,9 @@ require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const path = require("path");
-const os = require("os");
 const fs = require("fs");
+const os = require("os");
+const crypto = require("crypto");
 
 const {
   createUser,
@@ -16,122 +17,182 @@ const {
 
 const app = express();
 
-const PORT = Number(process.env.PORT) || 3000;
-const SESSION_SECRET =
-  process.env.SESSION_SECRET || "NICEGOLD_CHANGE_THIS_SESSION_SECRET";
+const PORT = process.env.PORT || 3000;
+
+const DATA_DIR = path.join(__dirname, "data");
+const PUBLIC_DIR = path.join(__dirname, "public");
+const ACTIVITY_FILE = path.join(DATA_DIR, "activity.json");
+
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(ACTIVITY_FILE)) {
+  fs.writeFileSync(ACTIVITY_FILE, "[]");
+}
+
+/* ============================================================
+   EXPRESS CONFIG
+============================================================ */
 
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 app.use(
   session({
-    secret: SESSION_SECRET,
+    secret:
+      process.env.SESSION_SECRET ||
+      crypto.randomBytes(32).toString("hex"),
+
     resave: false,
     saveUninitialized: false,
+
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 12
     }
   })
 );
 
-/* =========================================================
-   STATIC FILES
-========================================================= */
+app.use(express.static(PUBLIC_DIR));
 
-app.use(express.static(path.join(__dirname, "public")));
+/* ============================================================
+   ACTIVITY
+============================================================ */
 
-/* =========================================================
-   HELPERS
-========================================================= */
+function readActivity() {
+  try {
+    return JSON.parse(fs.readFileSync(ACTIVITY_FILE, "utf8"));
+  } catch {
+    return [];
+  }
+}
 
-function publicUser(user) {
-  if (!user) return null;
+function writeActivity(items) {
+  fs.writeFileSync(
+    ACTIVITY_FILE,
+    JSON.stringify(items.slice(-200), null, 2)
+  );
+}
 
-  return {
-    id: user.id,
-    name: user.name,
-    username: user.username,
-    role: user.role,
-    status: user.status,
-    createdAt: user.createdAt,
-    approvedAt: user.approvedAt || null
+function logActivity(type, message, user = null) {
+  const activities = readActivity();
+
+  activities.push({
+    id: crypto.randomUUID(),
+    type,
+    message,
+    user: user
+      ? {
+          id: user.id,
+          name: user.name,
+          username: user.username
+        }
+      : null,
+    createdAt: new Date().toISOString()
+  });
+
+  writeActivity(activities);
+}
+
+/* ============================================================
+   FIXED PERSONAL ADMIN QUESTION
+============================================================ */
+
+/*
+   CHANGE THESE TWO VALUES.
+
+   Keep your real answer private.
+*/
+
+const ADMIN_PERSONAL_QUESTION =
+  "What is the name of my first website project?";
+
+const ADMIN_PERSONAL_ANSWER =
+  "NICE";
+
+
+function normalizeAdminAnswer(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+
+function createAdminChallenge(req) {
+  req.session.adminChallenge = {
+    question: ADMIN_PERSONAL_QUESTION
   };
 }
 
-function requireLogin(req, res, next) {
-  if (!req.session || !req.session.user) {
-    return res.status(401).json({
-      ok: false,
-      message: "Authentication required"
-    });
-  }
 
-  next();
-}
+/* ============================================================
+   ADMIN AUTH MIDDLEWARE
+============================================================ */
 
 function requireAdmin(req, res, next) {
-  if (!req.session || !req.session.user) {
-    return res.status(401).json({
-      ok: false,
-      message: "Administrator authentication required"
-    });
-  }
-
-  if (req.session.user.role !== "admin") {
-    return res.status(403).json({
-      ok: false,
-      message: "Administrator access required"
-    });
-  }
-
-  next();
-}
-
-function requireApproved(req, res, next) {
-  if (!req.session || !req.session.user) {
-    return res.status(401).json({
-      ok: false,
-      message: "Authentication required"
-    });
-  }
-
-  const user = req.session.user;
-
-  if (user.role === "admin" || user.status === "APPROVED") {
+  if (req.session && req.session.adminVerified === true) {
     return next();
   }
 
-  return res.status(403).json({
+  return res.status(401).json({
     ok: false,
-    message: "Your account is waiting for administrator approval",
-    status: user.status
+    message: "Admin verification required."
   });
 }
 
-/* =========================================================
-   AUTHENTICATION
-========================================================= */
 
-/*
-   REQUEST ACCESS
-*/
+function requireUserOrAdmin(req, res, next) {
+  if (req.session && req.session.adminVerified === true) {
+    return next();
+  }
+
+  if (req.session && req.session.userId) {
+    return next();
+  }
+
+  return res.status(401).json({
+    ok: false,
+    message: "Authentication required."
+  });
+}
+
+
+/* ============================================================
+   BASIC API
+============================================================ */
+
+app.get("/api", (req, res) => {
+  res.json({
+    ok: true,
+    name: "BlueTigerGOLD VPS PANEL",
+    status: "ONLINE",
+    version: "V3",
+    time: new Date().toISOString()
+  });
+});
+
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: true,
+    status: "healthy",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+
+/* ============================================================
+   USER REGISTRATION
+============================================================ */
+
 app.post("/api/auth/register", async (req, res) => {
   try {
-    const name = String(req.body?.name || "").trim();
-    const username = String(req.body?.username || "")
-      .trim()
-      .toLowerCase();
-    const password = String(req.body?.password || "");
-
-    if (!name || !username || !password) {
-      return res.status(400).json({
-        ok: false,
-        message: "Name, username and password are required"
-      });
-    }
+    const { name, username, password } = req.body;
 
     const user = await createUser({
       name,
@@ -139,61 +200,52 @@ app.post("/api/auth/register", async (req, res) => {
       password
     });
 
+    logActivity(
+      "registration",
+      `New access request from ${user.username}`,
+      user
+    );
+
     return res.status(201).json({
       ok: true,
-      message: "Access request submitted",
-      user: publicUser(user)
+      message:
+        "Registration successful. Your account is pending admin approval.",
+      user
     });
-  } catch (error) {
-    console.error("Registration error:", error.message);
 
-    /*
-      IMPORTANT:
-      A duplicate username is a normal validation error.
-      It must NEVER crash the Node server.
-    */
+  } catch (error) {
+    console.error("Registration error:", error);
+
     if (
       error.message &&
       error.message.toLowerCase().includes("username already exists")
     ) {
       return res.status(409).json({
         ok: false,
-        message: "Username already exists. Please choose another username."
-      });
-    }
-
-    if (
-      error.message &&
-      error.message.toLowerCase().includes("password")
-    ) {
-      return res.status(400).json({
-        ok: false,
-        message: error.message
+        message: "Username already exists."
       });
     }
 
     return res.status(400).json({
       ok: false,
-      message: error.message || "Unable to submit access request"
+      message: error.message || "Registration failed."
     });
   }
 });
 
-/*
-   USER SIGN IN
-*/
+
+/* ============================================================
+   USER LOGIN
+============================================================ */
+
 app.post("/api/auth/login", async (req, res) => {
   try {
-    const username = String(req.body?.username || "")
-      .trim()
-      .toLowerCase();
-
-    const password = String(req.body?.password || "");
+    const { username, password } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({
         ok: false,
-        message: "Username and password are required"
+        message: "Username and password are required."
       });
     }
 
@@ -202,709 +254,834 @@ app.post("/api/auth/login", async (req, res) => {
     if (!user) {
       return res.status(401).json({
         ok: false,
-        message: "Invalid username or password"
+        message: "Invalid username or password."
       });
     }
 
     if (user.status === "PENDING") {
       return res.status(403).json({
         ok: false,
-        message: "Your access request is still pending approval",
-        status: "PENDING",
-        user: publicUser(user)
+        pending: true,
+        message: "Your account is waiting for admin approval."
       });
     }
 
-    if (user.status === "REJECTED" || user.status === "BLOCKED") {
+    if (
+      user.status === "REJECTED" ||
+      user.status === "SUSPENDED" ||
+      user.status === "BLOCKED"
+    ) {
       return res.status(403).json({
         ok: false,
-        message: "Your account does not currently have access",
-        status: user.status,
-        user: publicUser(user)
+        message:
+          `Your account is ${user.status.toLowerCase()}.`
       });
     }
 
-    if (user.status === "SUSPENDED") {
+    if (user.status !== "APPROVED") {
       return res.status(403).json({
         ok: false,
-        message: "Your account is currently suspended",
-        status: "SUSPENDED",
-        user: publicUser(user)
+        message: "Your account is not approved."
       });
     }
 
-    req.session.user = publicUser(user);
+    req.session.userId = user.id;
+
+    logActivity(
+      "login",
+      `User ${user.username} signed in`,
+      user
+    );
 
     return res.json({
       ok: true,
-      message: "Login successful",
-      user: publicUser(user)
+      message: "Login successful.",
+      user
     });
+
   } catch (error) {
     console.error("Login error:", error);
 
     return res.status(500).json({
       ok: false,
-      message: "Unable to process login"
+      message: "Login failed."
     });
   }
 });
 
-/*
-   ADMIN SIGN IN
-*/
-app.post("/api/auth/admin-login", async (req, res) => {
-  try {
-    const username = String(req.body?.username || "")
-      .trim()
-      .toLowerCase();
 
-    const password = String(req.body?.password || "");
+/* ============================================================
+   CURRENT USER
+============================================================ */
 
-    const adminUsername = String(
-      process.env.ADMIN_USERNAME || "nicegoldadmin"
-    )
-      .trim()
-      .toLowerCase();
-
-    const adminPassword = String(
-      process.env.ADMIN_PASSWORD || ""
-    );
-
-    if (!adminPassword) {
-      return res.status(500).json({
-        ok: false,
-        message: "Administrator password is not configured"
-      });
-    }
-
-    if (
-      username !== adminUsername ||
-      password !== adminPassword
-    ) {
-      return res.status(401).json({
-        ok: false,
-        message: "Invalid administrator credentials"
-      });
-    }
-
-    const adminUser = {
-      id: "admin",
-      name: "NICEGOLD Administrator",
-      username: adminUsername,
-      role: "admin",
-      status: "APPROVED"
-    };
-
-    req.session.user = adminUser;
-
-    return res.json({
-      ok: true,
-      message: "Administrator login successful",
-      user: adminUser
-    });
-  } catch (error) {
-    console.error("Admin login error:", error);
-
-    return res.status(500).json({
-      ok: false,
-      message: "Administrator login failed"
-    });
-  }
-});
-
-/*
-   CURRENT SESSION
-*/
 app.get("/api/auth/me", (req, res) => {
-  if (!req.session || !req.session.user) {
+  if (!req.session || !req.session.userId) {
     return res.json({
       ok: true,
-      authenticated: false,
-      user: null
+      authenticated: false
     });
   }
 
-  /*
-    Refresh normal users from the users database so that
-    approval/rejection changes are reflected immediately.
-  */
-  if (req.session.user.role !== "admin") {
-    const latest = getUser(req.session.user.id);
+  const user = getUser(req.session.userId);
 
-    if (latest) {
-      req.session.user = publicUser(latest);
-    }
+  if (!user) {
+    req.session.userId = null;
+
+    return res.json({
+      ok: true,
+      authenticated: false
+    });
   }
 
   return res.json({
     ok: true,
     authenticated: true,
-    user: req.session.user
+    user
   });
 });
 
-/*
-   LOGOUT
-*/
+
+/* ============================================================
+   USER LOGOUT
+============================================================ */
+
 app.post("/api/auth/logout", (req, res) => {
-  req.session.destroy((error) => {
-    if (error) {
-      console.error("Logout error:", error);
+  const userId = req.session?.userId;
 
-      return res.status(500).json({
-        ok: false,
-        message: "Unable to logout"
-      });
+  if (userId) {
+    const user = getUser(userId);
+
+    if (user) {
+      logActivity(
+        "logout",
+        `User ${user.username} signed out`,
+        user
+      );
     }
+  }
 
-    res.clearCookie("connect.sid");
+  req.session.userId = null;
 
-    return res.json({
-      ok: true,
-      message: "Logged out successfully"
-    });
+  res.json({
+    ok: true,
+    message: "Logged out."
   });
 });
 
-/* =========================================================
-   ADMIN USER MANAGEMENT
-========================================================= */
 
-app.get("/api/admin/users", requireAdmin, (req, res) => {
+/* ============================================================
+   FIXED ADMIN QUESTION
+============================================================ */
+
+app.get("/api/admin/challenge", (req, res) => {
+  if (!req.session.adminChallenge) {
+    createAdminChallenge(req);
+  }
+
+  res.json({
+    ok: true,
+    question: req.session.adminChallenge.question
+  });
+});
+
+
+/* ============================================================
+   ADMIN LOGIN
+============================================================ */
+
+app.post("/api/auth/admin-login", (req, res) => {
   try {
-    const users = getUsers();
+    const answer = normalizeAdminAnswer(req.body.answer);
+
+    if (!answer) {
+      return res.status(400).json({
+        ok: false,
+        message: "Please enter your answer."
+      });
+    }
+
+    const correctAnswer =
+      normalizeAdminAnswer(ADMIN_PERSONAL_ANSWER);
+
+    if (answer !== correctAnswer) {
+      createAdminChallenge(req);
+
+      return res.status(401).json({
+        ok: false,
+        message: "Incorrect answer.",
+        question:
+          req.session.adminChallenge.question
+      });
+    }
+
+    req.session.adminVerified = true;
+    delete req.session.adminChallenge;
+
+    logActivity(
+      "admin-login",
+      "BlueTigerGOLD administrator accessed the command center."
+    );
 
     return res.json({
       ok: true,
-      users: users.map(publicUser)
+      message: "Admin access granted.",
+      admin: {
+        username: "BlueTigerGOLD ADMIN",
+        role: "admin"
+      }
     });
+
   } catch (error) {
-    console.error("Get users error:", error);
+    console.error("Admin login error:", error);
 
     return res.status(500).json({
       ok: false,
-      message: "Unable to load users"
+      message: "Admin verification failed."
     });
   }
 });
 
-/*
-   APPROVE / REJECT / SUSPEND / RESTORE
-*/
-app.post("/api/admin/users/:id/status", requireAdmin, (req, res) => {
-  try {
-    const id = String(req.params.id || "").trim();
-    const status = String(req.body?.status || "")
-      .trim()
-      .toUpperCase();
 
-    const allowedStatuses = [
-      "APPROVED",
-      "REJECTED",
-      "SUSPENDED",
-      "BLOCKED",
-      "PENDING"
-    ];
+/* ============================================================
+   ADMIN SESSION
+============================================================ */
 
-    if (!id) {
-      return res.status(400).json({
-        ok: false,
-        message: "User ID is required"
-      });
+app.get("/api/admin/me", (req, res) => {
+  if (
+    !req.session ||
+    req.session.adminVerified !== true
+  ) {
+    return res.json({
+      ok: true,
+      authenticated: false
+    });
+  }
+
+  return res.json({
+    ok: true,
+    authenticated: true,
+    admin: {
+      username: "BlueTigerGOLD ADMIN",
+      role: "admin"
     }
+  });
+});
 
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({
-        ok: false,
-        message: "Invalid account status"
+
+/* ============================================================
+   ADMIN LOGOUT
+============================================================ */
+
+app.post("/api/admin/logout", (req, res) => {
+  req.session.adminVerified = false;
+  delete req.session.adminChallenge;
+
+  logActivity(
+    "admin-logout",
+    "BlueTigerGOLD administrator signed out."
+  );
+
+  res.json({
+    ok: true,
+    message: "Admin logged out."
+  });
+});
+
+
+/* ============================================================
+   ADMIN USER LIST
+============================================================ */
+
+app.get(
+  "/api/admin/users",
+  requireAdmin,
+  (req, res) => {
+    try {
+      const users = getUsers();
+
+      return res.json({
+        ok: true,
+        users
       });
-    }
 
-    const existing = getUser(id);
+    } catch (error) {
+      console.error("Admin users error:", error);
 
-    if (!existing) {
-      return res.status(404).json({
-        ok: false,
-        message: "User not found"
-      });
-    }
-
-    /*
-      Approved users can still be changed by the administrator
-      when necessary. The Access page will immediately reflect
-      the new status.
-    */
-    const updated = changeStatus(id, status);
-
-    if (!updated) {
       return res.status(500).json({
         ok: false,
-        message: "Unable to update user status"
+        message: "Unable to load users."
       });
     }
-
-    return res.json({
-      ok: true,
-      message: `User status changed to ${status}`,
-      user: publicUser(updated)
-    });
-  } catch (error) {
-    console.error("Status update error:", error);
-
-    return res.status(500).json({
-      ok: false,
-      message: "Unable to update user status"
-    });
   }
-});
+);
 
-/* =========================================================
+
+/* ============================================================
+   ADMIN CHANGE USER STATUS
+============================================================ */
+
+app.post(
+  "/api/admin/users/:id/status",
+  requireAdmin,
+  (req, res) => {
+    try {
+      const { status } = req.body;
+
+      const allowedStatuses = [
+        "PENDING",
+        "APPROVED",
+        "REJECTED",
+        "SUSPENDED",
+        "BLOCKED"
+      ];
+
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid account status."
+        });
+      }
+
+      const user = getUser(req.params.id);
+
+      if (!user) {
+        return res.status(404).json({
+          ok: false,
+          message: "User not found."
+        });
+      }
+
+      const updated = changeStatus(
+        req.params.id,
+        status
+      );
+
+      logActivity(
+        "admin-action",
+        `Admin changed ${user.username} status to ${status}.`,
+        user
+      );
+
+      return res.json({
+        ok: true,
+        message:
+          `User status changed to ${status}.`,
+        user: updated
+      });
+
+    } catch (error) {
+      console.error(
+        "Status update error:",
+        error
+      );
+
+      return res.status(500).json({
+        ok: false,
+        message: "Unable to update user status."
+      });
+    }
+  }
+);
+
+
+/* ============================================================
    VPS ACCESS
-========================================================= */
+============================================================ */
 
-app.get("/api/vps", requireApproved, (req, res) => {
-  return res.json({
-    ok: true,
-    message: "VPS access granted",
-    user: req.session.user,
-    panel: "NICEGOLD VPS PANEL"
-  });
-});
+app.get(
+  "/api/vps/access",
+  requireUserOrAdmin,
+  (req, res) => {
+    res.json({
+      ok: true,
+      access: true,
+      panel: "BlueTigerGOLD VPS PANEL",
+      status: "ONLINE"
+    });
+  }
+);
 
-app.get("/api/vps/access", requireApproved, (req, res) => {
-  return res.json({
-    ok: true,
-    access: true,
-    user: req.session.user
-  });
-});
 
-/* =========================================================
-   DASHBOARD TELEMETRY
-========================================================= */
+app.get(
+  "/api/vps",
+  requireUserOrAdmin,
+  (req, res) => {
+    res.json({
+      ok: true,
+      name: "BlueTigerGOLD VPS",
+      status: "ONLINE",
+      uptime: process.uptime(),
+      platform: process.platform,
+      architecture: process.arch,
+      node: process.version
+    });
+  }
+);
 
-app.get("/api/dashboard", requireApproved, (req, res) => {
-  try {
-    const cpus = os.cpus() || [];
+
+/* ============================================================
+   DASHBOARD
+============================================================ */
+
+app.get(
+  "/api/dashboard",
+  requireUserOrAdmin,
+  (req, res) => {
     const totalMemory = os.totalmem();
     const freeMemory = os.freemem();
-    const usedMemory = totalMemory - freeMemory;
+    const usedMemory =
+      totalMemory - freeMemory;
 
-    const load = os.loadavg
-      ? os.loadavg()[0]
-      : 0;
+    const load = os.loadavg();
 
-    const cpuUsage =
-      cpus.length > 0
-        ? Math.min(
-            100,
-            Math.max(
-              0,
-              Number(((load / cpus.length) * 100).toFixed(1))
-            )
-          )
-        : 0;
-
-    return res.json({
+    res.json({
       ok: true,
-      hostname: os.hostname(),
-      platform: os.platform(),
-      architecture: os.arch(),
-      uptime: os.uptime(),
+
       cpu: {
-        cores: cpus.length,
-        usage: cpuUsage
-      },
-      memory: {
-        total: totalMemory,
-        used: usedMemory,
-        free: freeMemory,
-        percentage: Number(
-          ((usedMemory / totalMemory) * 100).toFixed(1)
+        load1: load[0],
+        load5: load[1],
+        load15: load[2],
+        estimatedPercent: Math.min(
+          100,
+          Math.round(
+            (load[0] /
+              Math.max(os.cpus().length, 1)) *
+              100
+          )
         )
       },
-      load: os.loadavg ? os.loadavg() : [],
-      node: process.version,
-      pid: process.pid,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error("Dashboard telemetry error:", error);
 
-    return res.status(500).json({
-      ok: false,
-      message: "Unable to read dashboard telemetry"
-    });
-  }
-});
+      memory: {
+        total: totalMemory,
+        free: freeMemory,
+        used: usedMemory,
+        percent: Math.round(
+          (usedMemory / totalMemory) * 100
+        )
+      },
 
-/* =========================================================
-   SYSTEM INFORMATION
-========================================================= */
+      uptime: process.uptime(),
 
-app.get("/api/system", requireApproved, (req, res) => {
-  try {
-    const total = os.totalmem();
-    const free = os.freemem();
-
-    return res.json({
-      ok: true,
       system: {
         hostname: os.hostname(),
         platform: os.platform(),
         release: os.release(),
-        architecture: os.arch(),
-        cpuCount: os.cpus().length,
-        cpuModel: os.cpus()[0]?.model || "Unknown",
-        totalMemory: total,
-        freeMemory: free,
-        usedMemory: total - free,
-        uptime: os.uptime(),
-        nodeVersion: process.version,
-        pid: process.pid
+        arch: os.arch(),
+        cpus: os.cpus().length
       },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error("System information error:", error);
 
-    return res.status(500).json({
-      ok: false,
-      message: "Unable to load system information"
+      timestamp:
+        new Date().toISOString()
     });
   }
-});
+);
 
-/* =========================================================
+
+/* ============================================================
+   SYSTEM INFORMATION
+============================================================ */
+
+app.get(
+  "/api/system",
+  requireUserOrAdmin,
+  (req, res) => {
+    const total = os.totalmem();
+    const free = os.freemem();
+
+    res.json({
+      ok: true,
+
+      hostname: os.hostname(),
+      platform: os.platform(),
+      release: os.release(),
+      architecture: os.arch(),
+      nodeVersion: process.version,
+
+      cpuCount: os.cpus().length,
+
+      cpuModel:
+        os.cpus()[0]?.model ||
+        "Unknown",
+
+      memory: {
+        total,
+        free,
+        used: total - free
+      },
+
+      uptime:
+        os.uptime(),
+
+      processUptime:
+        process.uptime()
+    });
+  }
+);
+
+
+/* ============================================================
    NETWORK
-========================================================= */
+============================================================ */
 
-app.get("/api/network", requireApproved, (req, res) => {
-  try {
-    const interfaces = os.networkInterfaces();
-    const network = [];
+app.get(
+  "/api/network",
+  requireUserOrAdmin,
+  (req, res) => {
+    const interfaces =
+      os.networkInterfaces();
 
-    for (const [name, addresses] of Object.entries(interfaces)) {
+    const result = [];
+
+    for (const [name, addresses] of Object.entries(
+      interfaces
+    )) {
       for (const address of addresses || []) {
-        network.push({
+        result.push({
           interface: name,
           address: address.address,
           family: address.family,
           internal: address.internal,
-          mac: address.mac,
-          netmask: address.netmask
+          mac: address.mac
         });
       }
     }
 
-    return res.json({
+    res.json({
       ok: true,
-      interfaces: network,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error("Network error:", error);
-
-    return res.status(500).json({
-      ok: false,
-      message: "Unable to load network information"
+      interfaces: result
     });
   }
-});
+);
 
-/* =========================================================
+
+/* ============================================================
    SERVICES
-========================================================= */
+============================================================ */
 
-app.get("/api/services", requireApproved, (req, res) => {
-  return res.json({
-    ok: true,
-    services: [
-      {
-        name: "NICEGOLD Panel",
-        status: "ONLINE",
-        type: "CORE"
-      },
-      {
-        name: "Node.js",
-        status: "ONLINE",
-        type: "RUNTIME"
-      },
-      {
-        name: "Express",
-        status: "ONLINE",
-        type: "WEB"
-      },
-      {
-        name: "Authentication",
-        status: "ONLINE",
-        type: "SECURITY"
-      },
-      {
-        name: "Session Service",
-        status: "ONLINE",
-        type: "SECURITY"
-      }
-    ],
-    timestamp: new Date().toISOString()
-  });
-});
+app.get(
+  "/api/services",
+  requireUserOrAdmin,
+  (req, res) => {
+    res.json({
+      ok: true,
 
-/* =========================================================
-   ACTIVITY
-========================================================= */
+      services: [
+        {
+          name: "BlueTigerGOLD PANEL",
+          status: "ONLINE",
+          uptime: process.uptime()
+        },
+        {
+          name: "Node.js",
+          status: "ONLINE",
+          version: process.version
+        },
+        {
+          name: "Express",
+          status: "ONLINE"
+        },
+        {
+          name: "Authentication",
+          status: "ONLINE"
+        },
+        {
+          name: "Session Engine",
+          status: "ONLINE"
+        }
+      ]
+    });
+  }
+);
 
-app.get("/api/activity", requireApproved, (req, res) => {
-  const users = getUsers();
 
-  const activity = users
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt || 0) -
-        new Date(a.createdAt || 0)
-    )
-    .slice(0, 20)
-    .map((user) => ({
-      type: "ACCESS",
-      message: `${user.username} account is ${user.status}`,
-      user: user.username,
-      status: user.status,
-      timestamp: user.createdAt
-    }));
+/* ============================================================
+   ACTIVITY API
+============================================================ */
 
-  return res.json({
-    ok: true,
-    activity,
-    timestamp: new Date().toISOString()
-  });
-});
+app.get(
+  "/api/activity",
+  requireUserOrAdmin,
+  (req, res) => {
+    res.json({
+      ok: true,
+      activity:
+        readActivity()
+          .slice()
+          .reverse()
+          .slice(0, 100)
+    });
+  }
+);
 
-/* =========================================================
+
+/* ============================================================
    SECURITY
-========================================================= */
+============================================================ */
 
-app.get("/api/security", requireApproved, (req, res) => {
-  return res.json({
-    ok: true,
-    security: {
-      authentication: "ACTIVE",
-      sessionProtection: "ACTIVE",
-      passwordHashing: "BCRYPT",
-      adminProtection: "ACTIVE",
-      accessApproval: "ACTIVE"
-    },
-    timestamp: new Date().toISOString()
-  });
-});
+app.get(
+  "/api/security",
+  requireUserOrAdmin,
+  (req, res) => {
+    res.json({
+      ok: true,
 
-/* =========================================================
-   CONTROLLED CONSOLE
-========================================================= */
-
-app.post("/api/console", requireAdmin, (req, res) => {
-  const command = String(req.body?.command || "").trim();
-
-  if (!command) {
-    return res.status(400).json({
-      ok: false,
-      message: "Console command is required"
-    });
-  }
-
-  /*
-    This intentionally does NOT execute arbitrary shell commands.
-    It provides safe panel diagnostics instead.
-  */
-
-  const safeCommands = {
-    help: [
-      "status",
-      "users",
-      "uptime",
-      "memory",
-      "system"
-    ],
-    status: "NICEGOLD VPS PANEL ONLINE",
-    uptime: `${Math.floor(os.uptime())} seconds`,
-    memory: `${Math.round(
-      ((os.totalmem() - os.freemem()) / os.totalmem()) * 100
-    )}% memory used`,
-    system: `${os.platform()} ${os.arch()} | Node ${process.version}`,
-    users: `${getUsers().length} registered user(s)`
-  };
-
-  const key = command.toLowerCase();
-
-  if (!(key in safeCommands)) {
-    return res.status(400).json({
-      ok: false,
-      message: "Command not available",
-      available: Object.keys(safeCommands)
-    });
-  }
-
-  return res.json({
-    ok: true,
-    command,
-    output: safeCommands[key]
-  });
-});
-
-/* =========================================================
-   BACKUPS
-========================================================= */
-
-app.get("/api/backups", requireAdmin, (req, res) => {
-  let usersBackup = false;
-
-  try {
-    usersBackup = fs.existsSync(
-      path.join(__dirname, "data", "users.json")
-    );
-  } catch (_) {}
-
-  return res.json({
-    ok: true,
-    backups: [
-      {
-        name: "User Database",
-        status: usersBackup ? "AVAILABLE" : "MISSING",
-        file: "data/users.json"
-      },
-      {
-        name: "Panel Configuration",
-        status: "AVAILABLE",
-        file: ".env"
+      security: {
+        authentication: "ACTIVE",
+        sessionProtection: "ACTIVE",
+        adminGate: "ACTIVE",
+        passwordHashing: "BCRYPT",
+        httpOnlyCookies: true,
+        sameSiteCookies: true
       }
-    ],
-    timestamp: new Date().toISOString()
-  });
-});
+    });
+  }
+);
 
-/* =========================================================
-   HEALTH
-========================================================= */
 
-app.get("/api/health", (req, res) => {
-  return res.json({
-    ok: true,
-    status: "ONLINE",
-    service: "NICEGOLD VPS PANEL",
-    uptime: process.uptime(),
-    node: process.version,
-    timestamp: new Date().toISOString()
-  });
-});
+/* ============================================================
+   BACKUPS
+============================================================ */
 
-app.get("/api", (req, res) => {
-  return res.json({
-    ok: true,
-    message: "NICEGOLD VPS PANEL API ONLINE",
-    version: "V3",
-    endpoints: {
-      access: "/access",
-      admin: "/admin",
-      vps: "/vps",
-      health: "/api/health"
+app.get(
+  "/api/backups",
+  requireUserOrAdmin,
+  (req, res) => {
+    res.json({
+      ok: true,
+
+      backups: [
+        {
+          name: "Application Data",
+          status: "READY",
+          location: "data/"
+        },
+        {
+          name: "Activity Logs",
+          status: "READY",
+          location: "data/activity.json"
+        }
+      ]
+    });
+  }
+);
+
+
+/* ============================================================
+   CONTROLLED CONSOLE
+============================================================ */
+
+app.post(
+  "/api/console",
+  requireUserOrAdmin,
+  (req, res) => {
+    const command = String(
+      req.body.command || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    const commands = {
+
+      help: `
+BlueTigerGOLD VPS CONSOLE
+
+Available commands:
+
+help
+status
+users
+uptime
+memory
+system
+      `.trim(),
+
+      status: `
+BlueTigerGOLD VPS STATUS
+
+Panel: ONLINE
+Authentication: ACTIVE
+Admin Gate: ACTIVE
+Node: ${process.version}
+Platform: ${process.platform}
+Architecture: ${process.arch}
+      `.trim(),
+
+      users: (() => {
+        const users = getUsers();
+
+        return `
+TOTAL USERS: ${users.length}
+
+${users
+  .map(
+    user =>
+      `${user.username} | ${user.status}`
+  )
+  .join("\n")}
+        `.trim();
+      })(),
+
+      uptime:
+        `Process uptime: ${Math.round(
+          process.uptime()
+        )} seconds`,
+
+      memory: (() => {
+        const total = os.totalmem();
+        const free = os.freemem();
+        const used = total - free;
+
+        return `
+Memory Total: ${Math.round(
+  total / 1024 / 1024
+)} MB
+
+Memory Used: ${Math.round(
+  used / 1024 / 1024
+)} MB
+
+Memory Free: ${Math.round(
+  free / 1024 / 1024
+)} MB
+        `.trim();
+      })(),
+
+      system: `
+Hostname: ${os.hostname()}
+Platform: ${os.platform()}
+Release: ${os.release()}
+Architecture: ${os.arch()}
+Node: ${process.version}
+CPU Cores: ${os.cpus().length}
+      `.trim()
+    };
+
+    if (!commands[command]) {
+      return res.json({
+        ok: false,
+        output:
+          `Unknown command: ${command}\n\nType "help" for available commands.`
+      });
     }
-  });
-});
 
-/* =========================================================
+    logActivity(
+      "console",
+      `Console command executed: ${command}`
+    );
+
+    res.json({
+      ok: true,
+      output: commands[command]
+    });
+  }
+);
+
+
+/* ============================================================
    PAGE ROUTES
-========================================================= */
+============================================================ */
 
-/*
-   ACCESS CENTER
-*/
-app.get("/access", (req, res) => {
-  return res.sendFile(
-    path.join(__dirname, "public", "access.html")
-  );
-});
-
-/*
-   ADMIN CENTER
-*/
-app.get("/admin", (req, res) => {
-  return res.sendFile(
-    path.join(__dirname, "public", "admin.html")
-  );
-});
-
-/*
-   VPS PANEL
-*/
-app.get("/vps", (req, res) => {
-  if (!req.session || !req.session.user) {
-    return res.redirect("/access");
-  }
-
-  const user = req.session.user;
-
-  if (
-    user.role !== "admin" &&
-    user.status !== "APPROVED"
-  ) {
-    return res.redirect("/access");
-  }
-
-  return res.sendFile(
-    path.join(__dirname, "public", "index.html")
-  );
-});
-
-/*
-   Send visitors from the root to the Access Center.
-*/
 app.get("/", (req, res) => {
+  res.redirect("/access");
+});
+
+
+app.get("/access", (req, res) => {
+  res.sendFile(
+    path.join(
+      PUBLIC_DIR,
+      "access.html"
+    )
+  );
+});
+
+
+app.get("/admin", (req, res) => {
+  res.sendFile(
+    path.join(
+      PUBLIC_DIR,
+      "admin.html"
+    )
+  );
+});
+
+
+app.get("/vps", (req, res) => {
+  if (
+    req.session?.adminVerified === true ||
+    req.session?.userId
+  ) {
+    return res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
+  }
+
   return res.redirect("/access");
 });
 
-/* =========================================================
-   API 404
-========================================================= */
+
+/* ============================================================
+   404 API HANDLER
+============================================================ */
 
 app.use("/api", (req, res) => {
-  return res.status(404).json({
+  res.status(404).json({
     ok: false,
-    message: "API endpoint not found"
+    message: "API endpoint not found."
   });
 });
 
-/* =========================================================
-   GENERAL ERROR HANDLER
-========================================================= */
+
+/* ============================================================
+   ERROR HANDLER
+============================================================ */
 
 app.use((error, req, res, next) => {
-  console.error("Unhandled server error:", error);
+  console.error(
+    "SERVER ERROR:",
+    error
+  );
 
   if (res.headersSent) {
     return next(error);
   }
 
-  return res.status(500).json({
+  res.status(500).json({
     ok: false,
-    message: "Internal server error"
+    message: "Internal server error."
   });
 });
 
-/* =========================================================
-   START SERVER
-========================================================= */
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("");
-  console.log("==========================================");
-  console.log("        NICEGOLD VPS PANEL");
-  console.log("==========================================");
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Local: http://127.0.0.1:${PORT}`);
-  console.log("Access Center: /access");
-  console.log("Admin Center:  /admin");
-  console.log("VPS Panel:     /vps");
-  console.log("==========================================");
-  console.log("");
+/* ============================================================
+   START SERVER
+============================================================ */
+
+app.listen(PORT, () => {
+  console.log(`
+==========================================
+        BlueTigerGOLD VPS PANEL
+==========================================
+
+Server running on port ${PORT}
+
+Local:
+http://127.0.0.1:${PORT}
+
+Access Center:
+/access
+
+Admin Center:
+/admin
+
+VPS Dashboard:
+/vps
+
+==========================================
+        SYSTEM ONLINE
+==========================================
+`);
 });
