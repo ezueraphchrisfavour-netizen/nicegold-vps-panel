@@ -14,6 +14,9 @@ if (!fs.existsSync(USERS_FILE)) {
   fs.writeFileSync(USERS_FILE, "[]");
 }
 
+/* =========================================================
+   READ USERS
+========================================================= */
 
 function readUsers() {
   try {
@@ -26,14 +29,21 @@ function readUsers() {
   }
 }
 
+/* =========================================================
+   SAVE USERS
+========================================================= */
 
 function saveUsers(users) {
   fs.writeFileSync(
     USERS_FILE,
-    JSON.stringify(users, null, 2)
+    JSON.stringify(users, null, 2),
+    "utf8"
   );
 }
 
+/* =========================================================
+   REMOVE PASSWORD HASH FROM API RESPONSES
+========================================================= */
 
 function sanitize(user) {
   if (!user) return null;
@@ -43,8 +53,11 @@ function sanitize(user) {
   return safeUser;
 }
 
+/* =========================================================
+   CREATE USER
+========================================================= */
 
-async function createUser(name, username, password) {
+async function createUser({ name, username, password }) {
   const users = readUsers();
 
   name = String(name || "").trim();
@@ -61,6 +74,12 @@ async function createUser(name, username, password) {
 
   if (username.length < 3) {
     throw new Error("Username is too short");
+  }
+
+  if (!/^[a-z0-9._-]+$/.test(username)) {
+    throw new Error(
+      "Username can only contain letters, numbers, dots, underscores and hyphens"
+    );
   }
 
   if (password.length < 8) {
@@ -84,7 +103,7 @@ async function createUser(name, username, password) {
   if (
     users.some(
       user =>
-        String(user.username).toLowerCase() === username
+        String(user.username || "").toLowerCase() === username
     )
   ) {
     throw new Error("Username already exists");
@@ -104,32 +123,27 @@ async function createUser(name, username, password) {
   };
 
   users.push(user);
-
   saveUsers(users);
 
   return sanitize(user);
 }
 
+/* =========================================================
+   VERIFY LOGIN
+========================================================= */
 
 async function verifyLogin(username, password) {
-  const users = readUsers();
-
-  username = String(username || "")
-    .trim()
-    .toLowerCase();
-
+  username = String(username || "").trim().toLowerCase();
   password = String(password || "");
+
+  const users = readUsers();
 
   const user = users.find(
     item =>
-      String(item.username).toLowerCase() === username
+      String(item.username || "").toLowerCase() === username
   );
 
   if (!user) {
-    return null;
-  }
-
-  if (!user.passwordHash) {
     return null;
   }
 
@@ -145,56 +159,70 @@ async function verifyLogin(username, password) {
   return sanitize(user);
 }
 
+/* =========================================================
+   GET ALL USERS
+========================================================= */
 
 function getUsers() {
   return readUsers().map(sanitize);
 }
 
+/* =========================================================
+   GET ONE USER
+========================================================= */
 
 function getUser(id) {
   const user = readUsers().find(
-    item => item.id === id
+    item => String(item.id) === String(id)
   );
 
   return sanitize(user);
 }
 
+/* =========================================================
+   CHANGE USER STATUS
+========================================================= */
 
 function changeStatus(id, status) {
-  const users = readUsers();
-
-  const user = users.find(
-    item => item.id === id
-  );
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const allowed = [
+  const allowedStatuses = [
     "PENDING",
     "APPROVED",
     "REJECTED",
     "SUSPENDED"
   ];
 
-  if (!allowed.includes(status)) {
-    throw new Error("Invalid status");
+  if (!allowedStatuses.includes(status)) {
+    throw new Error("Invalid account status");
   }
 
-  user.status = status;
+  const users = readUsers();
+
+  const index = users.findIndex(
+    item => String(item.id) === String(id)
+  );
+
+  if (index === -1) {
+    return null;
+  }
+
+  users[index].status = status;
 
   if (status === "APPROVED") {
-    user.approvedAt = new Date().toISOString();
+    users[index].approvedAt =
+      users[index].approvedAt ||
+      new Date().toISOString();
   } else {
-    user.approvedAt = null;
+    users[index].approvedAt = null;
   }
 
   saveUsers(users);
 
-  return sanitize(user);
+  return sanitize(users[index]);
 }
 
+/* =========================================================
+   EXPORTS
+========================================================= */
 
 module.exports = {
   createUser,
