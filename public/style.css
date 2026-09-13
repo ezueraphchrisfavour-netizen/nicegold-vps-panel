@@ -2959,3 +2959,699 @@ body {
   }
 
 }
+
+/* =========================================================
+   NICEGOLD VPS PANEL V3.1
+   PREMIUM CONTROL-PANEL UPGRADE
+   ========================================================= */
+
+:root {
+  --ng-green: #39ff88;
+  --ng-red: #ff4d67;
+  --ng-blue: #4da6ff;
+  --ng-yellow: #ffd166;
+  --ng-glass: rgba(8, 11, 15, .82);
+  --ng-glass-strong: rgba(5, 7, 10, .94);
+  --ng-line: rgba(255,255,255,.09);
+  --ng-shadow: 0 20px 60px rgba(0,0,0,.38);
+}
+
+/* Better readability */
+body {
+  font-size: 13px;
+}
+
+.panel,
+.metric-card,
+.server-card,
+.service-large,
+.security-card {
+  box-shadow: var(--ng-shadow);
+}
+
+/* Make important values easier to read */
+.metric-number,
+.metric-value,
+.monitor-value,
+.panel h2 {
+  letter-spacing: -.02em;
+}
+
+/* LIVE status */
+.global-status,
+.status-online,
+.online,
+.status-active {
+  color: var(--ng-green);
+}
+
+.global-status::before,
+.status-online::before,
+.online::before,
+.status-active::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--ng-green);
+  box-shadow: 0 0 12px var(--ng-green);
+  animation: ngPulse 1.8s infinite;
+}
+
+@keyframes ngPulse {
+  0%,100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: .45;
+    transform: scale(.78);
+  }
+}
+
+/* Main panels */
+.panel {
+  border: 1px solid var(--ng-line);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(20,24,30,.82),
+      rgba(4,6,9,.91)
+    );
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  transition:
+    transform .22s ease,
+    border-color .22s ease,
+    box-shadow .22s ease;
+}
+
+.panel:hover {
+  border-color: rgba(255,255,255,.16);
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.46),
+    0 0 30px rgba(77,166,255,.035);
+}
+
+/* Metric cards */
+.metric-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -30% -70% -30%;
+  height: 120px;
+  background: radial-gradient(
+    circle,
+    rgba(77,166,255,.12),
+    transparent 68%
+  );
+  pointer-events: none;
+}
+
+.metric-number,
+.metric-card strong {
+  font-weight: 800;
+}
+
+/* Green success accents */
+.metric-card:nth-child(1) .metric-number,
+.metric-card:nth-child(1) strong {
+  color: var(--ng-green);
+}
+
+.metric-card:nth-child(5) .metric-number,
+.metric-card:nth-child(5) strong {
+  color: var(--ng-green);
+}
+
+/* Red warning/error states */
+.error,
+.status-error,
+.status-offline,
+.offline,
+.danger {
+  color: var(--ng-red) !important;
+}
+
+/* Graph containers */
+.chart-container,
+.chart-box,
+.performance-chart,
+.monitor-chart {
+  position: relative;
+  min-height: 250px;
+}
+
+canvas {
+  max-width: 100%;
+}
+
+/* Graph glow */
+#cpuChart,
+#ramChart,
+#diskChart,
+#mainChart,
+#monitorChart {
+  filter: drop-shadow(0 0 7px rgba(77,166,255,.18));
+}
+
+/* Buttons */
+button,
+.btn,
+.action-button,
+.small-button {
+  transition:
+    transform .16s ease,
+    opacity .16s ease,
+    border-color .16s ease,
+    background .16s ease;
+}
+
+button:hover,
+.btn:hover,
+.action-button:hover,
+.small-button:hover {
+  transform: translateY(-1px);
+}
+
+button:active,
+.btn:active,
+.action-button:active,
+.small-button:active {
+  transform: translateY(0);
+}
+
+/* Green primary actions */
+button.primary,
+.btn-primary,
+.action-primary,
+[data-command="status"] {
+  border-color: rgba(57,255,136,.3);
+}
+
+/* Console */
+#consoleOutput {
+  min-height: 300px;
+  max-height: 500px;
+  overflow-y: auto;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(57,255,136,.045),
+      transparent 35%
+    ),
+    rgba(0,0,0,.48);
+  border: 1px solid rgba(57,255,136,.08);
+  border-radius: 12px;
+  padding: 18px;
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+  line-height: 1.65;
+}
+
+.console-line-command {
+  color: var(--ng-green);
+}
+
+.console-line-error {
+  color: var(--ng-red);
+}
+
+/* Services */
+.service-row {
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    transform .18s ease;
+}
+
+.service-row:hover {
+  background: rgba(255,255,255,.035);
+  border-color: rgba(57,255,136,.12);
+  transform: translateX(2px);
+}
+
+/* Security cards */
+.security-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.security-card strong {
+  color: var(--ng-green);
+}
+
+.security-card:nth-child(2) strong {
+  color: var(--ng-green);
+}
+
+/* Network cards */
+.network-card,
+.interface-card {
+  min-height: 150px;
+}
+
+/* Activity */
+.activity-item,
+.log-item {
+  transition:
+    background .18s ease,
+    transform .18s ease;
+}
+
+.activity-item:hover,
+.log-item:hover {
+  background: rgba(255,255,255,.035);
+  transform: translateX(2px);
+}
+
+/* Server page */
+.server-card {
+  min-height: 160px;
+}
+
+/* Backup */
+.backup-status {
+  border-color: rgba(255,255,255,.1);
+}
+
+/* Empty-state polish */
+.empty-state,
+.loading,
+.no-data {
+  opacity: .8;
+}
+
+/* Dashboard spacing */
+.dashboard-grid,
+.bottom-grid,
+.monitor-big-grid {
+  gap: 16px;
+}
+
+/* Prevent cards from creating ugly overflow */
+.page-section,
+.panel,
+.metric-card,
+.service-large,
+.security-card,
+.server-card {
+  min-width: 0;
+}
+
+/* Mobile */
+@media (max-width: 1100px) {
+  .metric-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-grid {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .bottom-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  body {
+    font-size: 13px;
+  }
+
+  .metric-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .bottom-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .hero {
+    min-height: 300px;
+  }
+
+  .hero-content {
+    width: 100%;
+    padding: 35px 24px 80px;
+  }
+
+  .hero h1 {
+    font-size: clamp(42px, 13vw, 64px);
+  }
+
+  .metric-card {
+    min-height: 145px;
+  }
+
+  .monitor-big-grid {
+    grid-template-columns:
+      1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .metric-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .metric-card {
+    min-height: 125px;
+  }
+}
+
+/* Smooth page changes */
+.page-section {
+  animation: ngPageIn .24s ease both;
+}
+
+@keyframes ngPageIn {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.25);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.16);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,.28);
+}
+
+/* Focus accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(77,166,255,.65);
+  outline-offset: 2px;
+}
+
+/* Keep the wallpaper visible */
+.wallpaper {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.wallpaper-overlay {
+  pointer-events: none;
+}
+
+/* Final premium glass layer */
+.sidebar,
+.topbar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+
+/* =========================================================
+   NICEGOLD V3.1 - READABILITY + ICON UPGRADE
+   ========================================================= */
+
+/* Sidebar */
+.brand strong {
+  font-size: 19px;
+}
+
+.brand small {
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+
+.nav-item {
+  font-size: 11px;
+  padding: 11px 12px;
+}
+
+.nav-item b {
+  font-size: 14px;
+}
+
+.nav-item small {
+  font-size: 9px;
+}
+
+/* Top bar */
+.breadcrumb {
+  font-size: 12px;
+}
+
+.search-box input,
+#searchInput {
+  font-size: 12px;
+}
+
+.global-status {
+  font-size: 10px;
+}
+
+.clock strong {
+  font-size: 12px;
+}
+
+.clock small {
+  font-size: 9px;
+}
+
+.profile strong {
+  font-size: 11px;
+}
+
+.profile small {
+  font-size: 9px;
+}
+
+/* Hero */
+.hero-label,
+.hero-kicker {
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+
+.hero p {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.hero .btn,
+.hero button {
+  font-size: 11px;
+  padding: 11px 16px;
+}
+
+/* Metric cards */
+.metric-head {
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+
+.metric-icon {
+  font-size: 18px;
+}
+
+.metric-card strong,
+.metric-number {
+  font-size: 32px;
+}
+
+.metric-card small {
+  font-size: 10px;
+}
+
+.metric-meta {
+  font-size: 9px;
+}
+
+/* Panel headings */
+.panel-kicker {
+  font-size: 9px;
+  letter-spacing: .1em;
+}
+
+.panel h2 {
+  font-size: 16px;
+}
+
+.panel h3 {
+  font-size: 14px;
+}
+
+/* Graph controls */
+.chart-controls,
+.chart-control {
+  font-size: 9px;
+}
+
+/* Information lists */
+.info-list span {
+  font-size: 10px;
+}
+
+.info-list strong {
+  font-size: 10px;
+}
+
+/* Quick actions */
+.quick-action strong {
+  font-size: 10px;
+}
+
+.quick-action small {
+  font-size: 9px;
+}
+
+/* Tables */
+table th,
+.table-header {
+  font-size: 9px;
+}
+
+table td,
+.table-row {
+  font-size: 10px;
+}
+
+/* Services */
+.service-row {
+  font-size: 10px;
+}
+
+.service-row strong {
+  font-size: 11px;
+}
+
+.service-row small {
+  font-size: 9px;
+}
+
+/* Activity */
+.activity-item,
+.log-item {
+  font-size: 10px;
+}
+
+.activity-item strong,
+.log-item strong {
+  font-size: 11px;
+}
+
+/* Security */
+.security-card h3 {
+  font-size: 14px;
+}
+
+.security-card p {
+  font-size: 10px;
+}
+
+.security-card strong {
+  font-size: 11px;
+}
+
+.security-icon {
+  font-size: 22px;
+}
+
+/* Backup */
+.backup-left h2 {
+  font-size: 17px;
+}
+
+.backup-left p {
+  font-size: 10px;
+}
+
+.backup-icon {
+  font-size: 24px;
+}
+
+/* Console */
+#consoleOutput {
+  font-size: 11px;
+}
+
+/* Server cards */
+.server-card h3 {
+  font-size: 15px;
+}
+
+.server-card p {
+  font-size: 10px;
+}
+
+/* Make common icons more visible */
+.icon,
+.nav-icon,
+.metric-icon,
+.action-icon,
+.service-icon,
+.security-icon,
+.backup-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Buttons with icons */
+button svg,
+.btn svg,
+.action-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Mobile readability */
+@media (max-width: 720px) {
+  .nav-item {
+    font-size: 12px;
+  }
+
+  .metric-card strong,
+  .metric-number {
+    font-size: 29px;
+  }
+
+  .panel h2 {
+    font-size: 15px;
+  }
+
+  .hero p {
+    font-size: 12px;
+  }
+}
+
